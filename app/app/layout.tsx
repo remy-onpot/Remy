@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Outfit, Instrument_Serif } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
-const inter = Inter({ subsets: ['latin'] })
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
+const instrumentSerif = Instrument_Serif({ weight: '400', subsets: ['latin'], variable: '--font-instrument' })
 
 export const metadata: Metadata = {
-  title: 'Midsem - Secure Online Examination Platform',
+  title: 'NimdeQuizzer — Secure Examination Platform',
   description: 'A professional online examination platform with advanced anti-cheating features',
 }
 
@@ -18,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${outfit.variable} ${instrumentSerif.variable} ${outfit.className}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
