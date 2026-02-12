@@ -136,8 +136,9 @@ export function useSecurityMonitor({
       const actualDelta = now - lastCheckRef.current
       const drift = actualDelta - expectedDelta
 
-      // If drift is more than 2 seconds, app was likely suspended
-      if (drift > 2000) {
+      // If drift is more than 5 seconds, app was likely suspended
+      // (increased from 2s to reduce false positives on mobile)
+      if (drift > 5000) {
         const suspendedDuration = Math.floor(drift / 1000)
         recordEvent('time_warp', suspendedDuration)
         onWarning(`Suspicious gap detected: ${suspendedDuration}s`)

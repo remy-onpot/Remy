@@ -108,9 +108,10 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       }
 
       // Calculate time remaining
-      const settings = typedSession.quiz?.settings as QuizSettings
+      const settings = typedSession.quiz?.settings as QuizSettings | undefined
+      const duration = settings?.duration ?? 60 // fallback to 60 minutes if settings missing
       const startTime = new Date(sessionData.started_at).getTime()
-      const durationMs = settings.duration * 60 * 1000
+      const durationMs = duration * 60 * 1000
       const endTime = startTime + durationMs
       const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
       setTimeRemaining(remaining)
@@ -359,11 +360,16 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
   // Submit exam via secure API
   const submitExam = async (auto = false) => {
+    if (submitting) return // Prevent double-tap on mobile
     setSubmitting(true)
 
     try {
-      // Sync any remaining offline data
-      await syncOfflineData()
+      // Sync any remaining offline data (don't block submit on failure)
+      try {
+        await syncOfflineData()
+      } catch (syncErr) {
+        console.warn('Sync failed before submit, continuing:', syncErr)
+      }
 
       // Call secure server-side grading API
       const response = await fetch('/api/exam/submit', {
@@ -637,7 +643,8 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>⚠️ Final Submission Confirmation</DialogTitle>
-            <DialogDescription className="space-y-3 pt-2">
+            <DialogDescription className="space-y-3 pt-2" asChild>
+              <div className="text-sm text-muted-foreground space-y-3 pt-2">
               <p>You are about to submit your exam. This action <strong>CANNOT be undone</strong>.</p>
               
               <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-sm">
@@ -688,6 +695,7 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
               <p className="text-sm text-muted-foreground">
                 Are you sure you want to submit now?
               </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -706,7 +714,20 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
               <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => submitExam()} disabled={submitting} variant="destructive">
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  submitExam()
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault()
+                  submitExam()
+                }}
+                disabled={submitting}
+                variant="destructive"
+              >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

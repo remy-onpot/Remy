@@ -32,6 +32,7 @@ interface MonitorPageProps {
 // Constants for status determination
 const HEARTBEAT_ACTIVE_THRESHOLD = 30 // seconds
 const HEARTBEAT_OFFLINE_THRESHOLD = 60 // seconds
+const HEARTBEAT_AWAY_THRESHOLD = 15 // seconds — only show 'away' if heartbeat confirms unfocused for this long
 const VIOLATION_THRESHOLD = 3 // strikes before flagging
 
 export default function MonitorPage({ params }: MonitorPageProps) {
@@ -55,7 +56,8 @@ export default function MonitorPage({ params }: MonitorPageProps) {
    */
   const determineStudentStatus = (
     session: any | null,
-    heartbeatAgeSeconds: number | null
+    heartbeatAgeSeconds: number | null,
+    quizStrictness?: string
   ): StudentMonitorStatus => {
     // Not in roster or no session created
     if (!session) return 'not_joined'
@@ -72,8 +74,21 @@ export default function MonitorPage({ params }: MonitorPageProps) {
     // Heartbeat too old - connection lost
     if (heartbeatAgeSeconds > HEARTBEAT_OFFLINE_THRESHOLD) return 'offline'
 
-    // Recent heartbeat but not focused
-    if (session.focus_status !== 'focused' || !session.is_fullscreen) return 'away'
+    // Only check fullscreen for high strictness (mobile doesn't support it reliably)
+    const requireFullscreen = quizStrictness === 'high'
+    const isFullscreenOk = !requireFullscreen || session.is_fullscreen
+
+    // Only mark 'away' if the heartbeat has been reporting unfocused AND
+    // the heartbeat itself is recent (within the away threshold window).
+    // This prevents brief mobile interruptions from showing as 'away'.
+    if (session.focus_status !== 'focused' && heartbeatAgeSeconds <= HEARTBEAT_AWAY_THRESHOLD) {
+      return 'away'
+    }
+
+    // Fullscreen violation on high strictness
+    if (!isFullscreenOk && heartbeatAgeSeconds <= HEARTBEAT_ACTIVE_THRESHOLD) {
+      return 'away'
+    }
 
     // All good - actively taking exam
     return 'active'
@@ -139,7 +154,8 @@ export default function MonitorPage({ params }: MonitorPageProps) {
         const heartbeatAge = session?.last_heartbeat 
           ? calculateHeartbeatAge(session.last_heartbeat)
           : null
-        const status = determineStudentStatus(session, heartbeatAge)
+        const quizStrictness = (quiz as any)?.settings?.strictness
+        const status = determineStudentStatus(session, heartbeatAge, quizStrictness)
 
         return {
           index_number: rosterEntry.index_number,

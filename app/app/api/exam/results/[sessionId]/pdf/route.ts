@@ -158,6 +158,137 @@ export async function GET(
     }
     yPosition += 15
 
+    // ── Fetch questions, options, and answers ──
+    const { data: questions } = await supabaseAdmin
+      .from('questions')
+      .select('*')
+      .eq('quiz_id', session.quiz_id)
+      .order('position')
+
+    const { data: allOptions } = await supabaseAdmin
+      .from('options')
+      .select('*')
+
+    const { data: answers } = await supabaseAdmin
+      .from('answers')
+      .select('*')
+      .eq('session_id', sessionId)
+
+    if (questions && questions.length > 0) {
+      const optionsByQuestion = new Map<string, any[]>()
+      allOptions?.forEach(opt => {
+        const list = optionsByQuestion.get(opt.question_id) || []
+        list.push(opt)
+        optionsByQuestion.set(opt.question_id, list)
+      })
+
+      const answerMap = new Map(answers?.map(a => [a.question_id, a]) || [])
+
+      // Question-by-question results
+      doc.setDrawColor(200, 200, 200)
+      doc.line(20, yPosition, pageWidth - 20, yPosition)
+      yPosition += 10
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.setTextColor(0, 0, 0)
+      doc.text('Question Results', 20, yPosition)
+      yPosition += 10
+
+      let totalEarned = 0
+      let totalPossible = 0
+
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i]
+        const qOptions = optionsByQuestion.get(q.id) || []
+        const studentAnswer = answerMap.get(q.id)
+
+        // Check if we need a new page
+        if (yPosition > doc.internal.pageSize.getHeight() - 50) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        const correctOption = qOptions.find((o: any) => o.is_correct)
+        let studentAnswerText = 'Not answered'
+        let isCorrect = false
+
+        if (q.type === 'mcq' || q.type === 'boolean') {
+          if (studentAnswer?.selected_option_id) {
+            const selected = qOptions.find((o: any) => o.id === studentAnswer.selected_option_id)
+            studentAnswerText = selected?.content || 'Unknown option'
+            isCorrect = selected?.is_correct || false
+          }
+        } else if (q.type === 'short_answer') {
+          studentAnswerText = studentAnswer?.text_response || 'Not answered'
+        }
+
+        const pointsEarned = isCorrect ? (q.points || 1) : 0
+        totalEarned += pointsEarned
+        totalPossible += (q.points || 1)
+
+        // Question number and status icon
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(10)
+        doc.setTextColor(0, 0, 0)
+
+        const statusIcon = studentAnswerText === 'Not answered' ? '○' : isCorrect ? '✓' : '✗'
+        const statusColor: [number, number, number] = studentAnswerText === 'Not answered'
+          ? [150, 150, 150]
+          : isCorrect ? [0, 150, 0] : [220, 50, 50]
+
+        doc.text(`Q${i + 1}.`, 20, yPosition)
+        doc.setTextColor(...statusColor)
+        doc.text(statusIcon, 32, yPosition)
+        doc.setTextColor(0, 0, 0)
+
+        // Question content (truncate if too long)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        const questionText = (q.content || '').substring(0, 80) + ((q.content || '').length > 80 ? '...' : '')
+        doc.text(questionText, 40, yPosition)
+        yPosition += 5
+
+        // Student answer
+        doc.setFontSize(8)
+        doc.setTextColor(80, 80, 80)
+        doc.text(`Your answer: ${studentAnswerText.substring(0, 70)}`, 40, yPosition)
+        yPosition += 4
+
+        // Correct answer
+        if (correctOption && !isCorrect) {
+          doc.setTextColor(0, 130, 0)
+          doc.text(`Correct: ${(correctOption.content || '').substring(0, 70)}`, 40, yPosition)
+          yPosition += 4
+        }
+
+        // Points
+        doc.setTextColor(100, 100, 100)
+        doc.text(`${pointsEarned}/${q.points || 1} pts`, pageWidth - 35, yPosition - (isCorrect ? 4 : 8), { align: 'right' })
+
+        yPosition += 6
+      }
+
+      // Summary line
+      if (yPosition > doc.internal.pageSize.getHeight() - 40) {
+        doc.addPage()
+        yPosition = 20
+      }
+
+      doc.setDrawColor(200, 200, 200)
+      doc.line(20, yPosition, pageWidth - 20, yPosition)
+      yPosition += 8
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.setTextColor(0, 0, 0)
+      doc.text(`Total: ${totalEarned} / ${totalPossible} points`, 20, yPosition)
+
+      const percentage = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 0
+      doc.text(`${percentage}%`, pageWidth - 25, yPosition, { align: 'right' })
+      yPosition += 15
+    }
+
     // Footer
     yPosition = doc.internal.pageSize.getHeight() - 20
     doc.setFontSize(8)

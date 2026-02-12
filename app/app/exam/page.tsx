@@ -37,16 +37,54 @@ export default function ExamEntryPage() {
     }
 
     try {
-      // Validate quiz code
+      // Look up quiz by code (any status — we handle routing below)
       const { data: quiz, error: quizError } = await supabaseClient
         .from('quizzes')
         .select('*')
         .eq('code', code.toUpperCase().trim())
-        .eq('status', 'live')
         .single()
 
       if (quizError || !quiz) {
-        setError('Invalid quiz code or quiz is not currently live')
+        setError('Invalid quiz code')
+        return
+      }
+
+      // Check for existing session for this student
+      const { data: existingSession } = await supabaseClient
+        .from('exam_sessions')
+        .select('*')
+        .eq('quiz_id', quiz.id)
+        .ilike('index_number', indexNumber.trim())
+        .in('status', ['in_progress', 'submitted', 'flagged'])
+        .maybeSingle()
+
+      // If quiz has ended, try to find ANY session to show results
+      if (quiz.status === 'ended') {
+        if (existingSession) {
+          router.push(`/exam/session/${existingSession.id}/results`)
+          return
+        }
+        // Broader search — maybe session has a different status
+        const { data: anySession } = await supabaseClient
+          .from('exam_sessions')
+          .select('id')
+          .eq('quiz_id', quiz.id)
+          .ilike('index_number', indexNumber.trim())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (anySession) {
+          router.push(`/exam/session/${anySession.id}/results`)
+          return
+        }
+        setError('This quiz has ended. No exam session was found for your index number.')
+        return
+      }
+
+      // If quiz is not live (e.g., draft), reject entry
+      if (quiz.status !== 'live') {
+        setError('This quiz is not currently live')
         return
       }
 
@@ -55,42 +93,22 @@ export default function ExamEntryPage() {
         .from('roster')
         .select('*')
         .eq('quiz_id', quiz.id)
-        .eq('index_number', indexNumber.trim())
-        .single()
+        .ilike('index_number', indexNumber.trim())
+        .maybeSingle()
 
       if (rosterError || !rosterEntry) {
         setError('Index number not found in roster for this exam')
         return
       }
 
-      // Check for existing session
-      const { data: existingSession } = await supabaseClient
-        .from('exam_sessions')
-        .select('*')
-        .eq('quiz_id', quiz.id)
-        .eq('index_number', indexNumber.trim())
-        .in('status', ['in_progress', 'submitted', 'flagged'])
-        .single()
-
+      // Handle existing session (quiz is live at this point)
       if (existingSession) {
         if (existingSession.status === 'submitted' || existingSession.status === 'flagged') {
-          // Check if quiz has ended - if so, redirect to results
-          if (quiz.status === 'ended') {
-            router.push(`/exam/session/${existingSession.id}/results`)
-            return
-          }
-          // Quiz still live - show waiting message
           setError('Exam submitted. Results will be available when the quiz ends.')
           return
         }
-        // Resume existing session
+        // Resume existing in-progress session
         router.push(`/exam/session/${existingSession.id}`)
-        return
-      }
-
-      // Check if quiz is still accepting new sessions
-      if (quiz.status !== 'live') {
-        setError('This quiz is no longer accepting submissions')
         return
       }
 
@@ -102,7 +120,7 @@ export default function ExamEntryPage() {
         .from('exam_sessions')
         .insert({
           quiz_id: quiz.id,
-          index_number: indexNumber,
+          index_number: indexNumber.trim(),
           device_fingerprint: deviceFingerprint,
           user_agent: userAgent,
           status: 'in_progress'

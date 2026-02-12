@@ -189,39 +189,44 @@ export default function NewQuizPage() {
       if (!quiz) throw new Error('Failed to create quiz')
       const typedQuiz = quiz as any
 
-      // Create questions
+      // Batch insert all questions at once
+      const questionInserts = questions.map((q, i) => ({
+        quiz_id: typedQuiz.id,
+        type: q.type,
+        content: q.content,
+        points: q.points || 1,
+        position: i
+      }))
+
+      const { data: insertedQuestions, error: questionsError } = await (supabaseClient
+        .from('questions')
+        .insert(questionInserts) as any)
+        .select()
+
+      if (questionsError) throw questionsError
+      if (!insertedQuestions || insertedQuestions.length === 0) throw new Error('Failed to create questions')
+
+      // Batch insert all options at once
+      const optionInserts: { question_id: string; content: string; is_correct: boolean }[] = []
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
-        // Type assertions for required fields from form state
-        const insertObj: any = {
-          quiz_id: typedQuiz.id,
-          type: q.type,
-          content: q.content,
-          points: q.points || 1,
-          position: i
-        }
-        const { data: question, error: questionError } = await (supabaseClient
-          .from('questions')
-          .insert(insertObj) as any)
-          .select()
-          .single()
-
-        if (questionError) throw questionError
-
-        // Create options for MCQ
         if (q.type === 'mcq' && q.options) {
           for (const opt of q.options) {
-            const { error: optionError } = await supabaseClient
-              .from('options')
-              .insert({
-                question_id: question.id,
-                content: opt.content,
-                is_correct: opt.is_correct
-              })
-
-            if (optionError) throw optionError
+            optionInserts.push({
+              question_id: insertedQuestions[i].id,
+              content: opt.content,
+              is_correct: opt.is_correct
+            })
           }
         }
+      }
+
+      if (optionInserts.length > 0) {
+        const { error: optionsError } = await supabaseClient
+          .from('options')
+          .insert(optionInserts)
+
+        if (optionsError) throw optionsError
       }
 
       router.push('/dashboard')

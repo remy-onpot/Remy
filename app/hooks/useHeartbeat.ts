@@ -21,15 +21,43 @@ export function useHeartbeat({
   const isOnlineRef = useRef<boolean>(true)
   const lastHeartbeatRef = useRef<number>(Date.now())
 
+  // Track focus state with tolerance for brief mobile interruptions
+  const focusedRecentlyRef = useRef<boolean>(true)
+  const blurTimestampRef = useRef<number | null>(null)
+  const MOBILE_FOCUS_GRACE_MS = 3000 // 3s grace for mobile glitches
+
+  // Listen for visibility changes and track with grace period
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        focusedRecentlyRef.current = true
+        blurTimestampRef.current = null
+      } else {
+        blurTimestampRef.current = Date.now()
+        // Only mark as unfocused after the grace period
+        setTimeout(() => {
+          if (blurTimestampRef.current && Date.now() - blurTimestampRef.current >= MOBILE_FOCUS_GRACE_MS) {
+            focusedRecentlyRef.current = false
+          }
+        }, MOBILE_FOCUS_GRACE_MS)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+
   const sendHeartbeat = useCallback(async () => {
     try {
       const battery = await (navigator as any).getBattery?.().catch(() => null)
       const currentUserAgent = navigator.userAgent
+
+      // Use the grace-period-aware focus state instead of raw visibilityState
+      const isFocused = document.visibilityState === 'visible' || focusedRecentlyRef.current
       
       const payload = {
         session_token: sessionId,
         timestamp: Date.now(),
-        focus_status: document.visibilityState === 'visible' ? 'focused' : 'hidden',
+        focus_status: isFocused ? 'focused' : 'hidden',
         battery_level: battery?.level,
         is_fullscreen: !!document.fullscreenElement,
         user_agent: currentUserAgent,
