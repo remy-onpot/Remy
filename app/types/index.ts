@@ -1,7 +1,10 @@
 export type QuizStatus = 'draft' | 'live' | 'ended' | 'archived';
-export type QuestionType = 'mcq' | 'short_answer' | 'boolean';
+
+// UPDATED: Added 'long_answer' (Theory) and 'comprehension'
+export type QuestionType = 'mcq' | 'short_answer' | 'boolean' | 'long_answer' | 'comprehension';
+
 export type SessionStatus = 'in_progress' | 'submitted' | 'flagged' | 'terminated';
-export type SecurityEventType = 'tab_switch' | 'focus_lost' | 'network_disconnect' | 'fullscreen_exit' | 'mouse_leave' | 'time_warp' | 'user_agent_mismatch' | 'devtools_detected' | 'copy_attempt';
+export type SecurityEventType = 'tab_switch' | 'focus_lost' | 'network_disconnect' | 'fullscreen_exit' | 'mouse_leave' | 'time_warp' | 'user_agent_mismatch' | 'devtools_detected' | 'copy_attempt' | 'paste_attempt' | 'context_menu'   
 
 export interface Quiz {
   id: string;
@@ -32,6 +35,16 @@ export interface Question {
   media_url?: string;
   points: number;
   position: number;
+  
+  // NEW: For Comprehension Passages
+  // If this is set, show this text in a card above the question
+  context?: string | null; 
+  
+  // NEW: For Theory/Subjective grading
+  // The AI can extract the "answer key" text for the lecturer to see
+  sample_answer?: string | null;
+
+  // Options are optional (Theory/Comprehension don't have choices)
   options?: Option[];
 }
 
@@ -111,6 +124,7 @@ export interface LocalSecurityEvent {
   type: SecurityEventType;
   timestamp: number;
   duration?: number;
+  sessionId: string;
 }
 
 export interface StudentEntry {
@@ -124,7 +138,7 @@ export type StudentMonitorStatus =
   | 'away'          // In exam, recent heartbeat, not focused
   | 'offline'       // In exam, stale heartbeat (>60s)
   | 'flagged'       // Has violations or marked as suspicious
-  | 'submitted'     // Completed exam
+  | 'submitted';     // Completed exam
 
 export interface LiveMonitorStudent {
   index_number: string;
