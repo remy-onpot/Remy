@@ -14,7 +14,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowLeft, Loader2, Plus, Trash2, Check } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { generateQuizCode } from '@/lib/utils'
-import { Question, Option } from '@/types'
+import { Question, QuestionType } from '@/types'
+import { QuizImportModal } from '@/components/quiz/QuizImportModal'
+import type { ExtractedQuiz } from '@/lib/services/ai-quiz'
+
+type FormOption = { content: string; is_correct: boolean }
+type FormQuestion = {
+  type?: QuestionType
+  content?: string
+  points?: number
+  options?: FormOption[]
+}
 
 export default function NewQuizPage() {
   const router = useRouter()
@@ -22,16 +32,33 @@ export default function NewQuizPage() {
   const [duration, setDuration] = useState(60)
   const [strictness, setStrictness] = useState<'low' | 'medium' | 'high'>('medium')
   const [shuffle, setShuffle] = useState(true)
-  const [questions, setQuestions] = useState<Partial<Question>[]>([
+  const [questions, setQuestions] = useState<FormQuestion[]>([
     { type: 'mcq', content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
   ])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Handle AI-extracted questions
+  const handleQuestionsExtracted = (data: ExtractedQuiz) => {
+    if (data.title && !title) {
+      setTitle(data.title)
+    }
+
+    const extractedQuestions: FormQuestion[] = data.questions.map(q => ({
+      type: q.type,
+      content: q.content,
+      points: q.points,
+      options: q.options || []
+    }))
+
+    setQuestions(extractedQuestions)
+    setError('') // Clear any previous errors
+  }
+
   const addQuestion = () => {
     setQuestions([
       ...questions,
-      { type: 'mcq', content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
+      { type: 'mcq' as QuestionType, content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
     ])
   }
 
@@ -49,7 +76,7 @@ export default function NewQuizPage() {
     const updated = [...questions]
     updated[questionIndex].options = [
       ...(updated[questionIndex].options || []),
-      { content: '', is_correct: false }
+      { content: '', is_correct: false } as FormOption
     ]
     setQuestions(updated)
   }
@@ -77,23 +104,55 @@ export default function NewQuizPage() {
     setError('')
 
     try {
-      // Validate
+      // Comprehensive validation
       if (!title.trim()) {
         setError('Please enter a quiz title')
         return
       }
+      
+      if (title.trim().length < 3) {
+        setError('Quiz title must be at least 3 characters')
+        return
+      }
+      
       if (questions.length === 0) {
         setError('Please add at least one question')
         return
       }
-      for (const q of questions) {
+      
+      // Validate each question
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i]
+        
         if (!q.content?.trim()) {
-          setError('All questions must have content')
+          setError(`Question ${i + 1}: Content is required`)
           return
         }
-        if (q.type === 'mcq' && (!q.options || q.options.length < 2)) {
-          setError('MCQ questions must have at least 2 options')
+        
+        if (q.content.trim().length < 5) {
+          setError(`Question ${i + 1}: Content must be at least 5 characters`)
           return
+        }
+        
+        if (q.type === 'mcq') {
+          if (!q.options || q.options.length < 2) {
+            setError(`Question ${i + 1}: MCQ questions must have at least 2 options`)
+            return
+          }
+          
+          // Check if all options have content
+          const emptyOption = q.options.findIndex(opt => !opt.content?.trim())
+          if (emptyOption !== -1) {
+            setError(`Question ${i + 1}, Option ${emptyOption + 1}: Content is required`)
+            return
+          }
+          
+          // Check if at least one option is marked correct
+          const hasCorrectAnswer = q.options.some(opt => opt.is_correct)
+          if (!hasCorrectAnswer) {
+            setError(`Question ${i + 1}: You must mark at least one option as correct`)
+            return
+          }
         }
       }
 
@@ -126,18 +185,24 @@ export default function NewQuizPage() {
 
       if (quizError) throw quizError
 
+      // Type assertion and validate quiz exists
+      if (!quiz) throw new Error('Failed to create quiz')
+      const typedQuiz = quiz as any
+
       // Create questions
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
-        const { data: question, error: questionError } = await supabaseClient
+        // Type assertions for required fields from form state
+        const insertObj: any = {
+          quiz_id: typedQuiz.id,
+          type: q.type,
+          content: q.content,
+          points: q.points || 1,
+          position: i
+        }
+        const { data: question, error: questionError } = await (supabaseClient
           .from('questions')
-          .insert({
-            quiz_id: quiz.id,
-            type: q.type,
-            content: q.content,
-            points: q.points || 1,
-            position: i
-          })
+          .insert(insertObj) as any)
           .select()
           .single()
 
@@ -161,7 +226,8 @@ export default function NewQuizPage() {
 
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'An error occurred')
+      console.error('Quiz creation error:', err)
+      setError(err.message || 'Failed to create quiz. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -251,10 +317,13 @@ export default function NewQuizPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Questions</h2>
-              <Button type="button" variant="outline" onClick={addQuestion} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Question
-              </Button>
+              <div className="flex gap-2">
+                <QuizImportModal onQuestionsExtracted={handleQuestionsExtracted} />
+                <Button type="button" variant="outline" onClick={addQuestion} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Question
+                </Button>
+              </div>
             </div>
 
             {questions.map((question, qIndex) => (

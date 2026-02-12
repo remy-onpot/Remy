@@ -25,14 +25,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { supabaseClient } from '@/lib/supabase'
-import { Quiz } from '@/types'
+import { Quiz, QuizSettings } from '@/types'
 import { formatDuration } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+
+  // Helper function to transform database row to Quiz type
+  const transformQuiz = (row: any): Quiz => ({
+    ...row,
+    settings: row.settings as QuizSettings
+  })
 
   useEffect(() => {
     checkAuth()
@@ -50,15 +57,23 @@ export default function DashboardPage() {
 
   const fetchQuizzes = async () => {
     try {
+      const { data: { user } } = await supabaseClient.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
       const { data, error } = await supabaseClient
         .from('quizzes')
         .select('*')
+        .eq('lecturer_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setQuizzes(data || [])
-    } catch (error) {
+      setQuizzes((data || []).map(transformQuiz))
+    } catch (error: any) {
       console.error('Error fetching quizzes:', error)
+      toast.error('Failed to load quizzes')
     } finally {
       setLoading(false)
     }

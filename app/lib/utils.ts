@@ -32,13 +32,85 @@ export function formatTimeRemaining(seconds: number): string {
 }
 
 export function generateDeviceFingerprint(): string {
+  if (typeof window === 'undefined') return 'server-side'
+
+  // Collect comprehensive device characteristics
   const userAgent = navigator.userAgent
   const platform = navigator.platform
-  const screenRes = `${screen.width}x${screen.height}`
+  const language = navigator.language
+  const screenRes = `${screen.width}x${screen.height}x${screen.colorDepth}`
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const timezoneOffset = new Date().getTimezoneOffset()
   
-  const fingerprint = `${userAgent}|${platform}|${screenRes}|${timezone}`
-  return btoa(fingerprint).slice(0, 32)
+  // Hardware-based identifiers (more stable)
+  const hardwareConcurrency = navigator.hardwareConcurrency || 0
+  const deviceMemory = (navigator as any).deviceMemory || 0
+  
+  // Canvas fingerprinting (highly unique)
+  let canvasFingerprint = ''
+  try {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      canvas.width = 200
+      canvas.height = 50
+      ctx.textBaseline = 'top'
+      ctx.font = '14px "Arial"'
+      ctx.textBaseline = 'alphabetic'
+      ctx.fillStyle = '#f60'
+      ctx.fillRect(125, 1, 62, 20)
+      ctx.fillStyle = '#069'
+      ctx.fillText('SecureExam', 2, 15)
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)'
+      ctx.fillText('SecureExam', 4, 17)
+      canvasFingerprint = canvas.toDataURL().slice(-50)
+    }
+  } catch (e) {
+    canvasFingerprint = 'unsupported'
+  }
+  
+  // WebGL fingerprinting (GPU detection)
+  let webglFingerprint = ''
+  try {
+    const canvas = document.createElement('canvas')
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
+      if (debugInfo) {
+        const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL)
+        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+        webglFingerprint = `${vendor}|${renderer}`.slice(0, 30)
+      }
+    }
+  } catch (e) {
+    webglFingerprint = 'unsupported'
+  }
+  
+  // Combine all identifiers with separators
+  const components = [
+    userAgent,
+    platform,
+    language,
+    screenRes,
+    timezone,
+    timezoneOffset.toString(),
+    hardwareConcurrency.toString(),
+    deviceMemory.toString(),
+    canvasFingerprint,
+    webglFingerprint
+  ]
+  
+  const fingerprint = components.join('|')
+  
+  // Create a stable hash (base64 encoding + truncation)
+  const hash = btoa(fingerprint).replace(/[^a-zA-Z0-9]/g, '').slice(0, 64)
+  return hash
+}
+
+// Extract clean user agent for storage and validation
+export function getUserAgent(): string {
+  if (typeof window === 'undefined') return 'server-side'
+  return navigator.userAgent
 }
 
 export function calculateScore(

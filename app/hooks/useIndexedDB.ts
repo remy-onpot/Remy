@@ -4,51 +4,44 @@ import { useCallback, useEffect, useRef } from 'react'
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
 import { LocalSecurityEvent, OfflinePeriod, Answer } from '@/types'
 
-interface ExamDB extends DBSchema {
-  answers: {
-    key: string
-    value: {
-      question_id: string
-      selected_option_id?: string
-      text_response?: string
-      synced: boolean
-      timestamp: number
-    }
-    indexes: { 'by-synced': boolean }
-  }
-  security_logs: {
-    key: string
-    value: {
-      id: string
-      event_type: string
-      duration_seconds?: number
-      timestamp: number
-      synced: boolean
-    }
-    indexes: { 'by-synced': boolean }
-  }
-  offline_periods: {
-    key: string
-    value: {
-      id: string
-      start: number
-      end?: number
-      events: LocalSecurityEvent[]
-      synced: boolean
-    }
-    indexes: { 'by-synced': boolean }
-  }
-  session: {
-    key: string
-    value: {
-      session_id: string
-      quiz_id: string
-      index_number: string
-      started_at: number
-      last_sync: number
-    }
-  }
+type AnswerValue = {
+  question_id: string
+  selected_option_id?: string
+  text_response?: string
+  synced: boolean
+  timestamp: number
 }
+
+type SecurityLogValue = {
+  id: string
+  event_type: string
+  duration_seconds?: number
+  timestamp: number
+  synced: boolean
+}
+
+type OfflinePeriodValue = {
+  id: string
+  start: number
+  end?: number
+  events: LocalSecurityEvent[]
+  synced: boolean
+}
+
+type SessionValue = {
+  session_id: string
+  quiz_id: string
+  index_number: string
+  device_fingerprint: string
+  status: 'in_progress' | 'submitted' | 'flagged'
+  synced: boolean
+}
+
+// Union of all possible store value types
+type StoreValue = AnswerValue | SecurityLogValue | OfflinePeriodValue | SessionValue
+
+// Declare ExamDB as any to avoid DBSchema union constraints
+type ExamDB = any
 
 const DB_NAME = 'midsem-exam-db'
 const DB_VERSION = 1
@@ -114,7 +107,7 @@ export function useIndexedDB(sessionId: string) {
     const tx = dbRef.current.transaction('answers', 'readonly')
     const store = tx.objectStore('answers')
     const index = store.index('by-synced')
-    return await index.getAll(false)
+    return await index.getAll(IDBKeyRange.only(false))
   }, [])
 
   const markAnswersSynced = useCallback(async (questionIds: string[]) => {
@@ -151,7 +144,7 @@ export function useIndexedDB(sessionId: string) {
     const tx = dbRef.current.transaction('security_logs', 'readonly')
     const store = tx.objectStore('security_logs')
     const index = store.index('by-synced')
-    return await index.getAll(false)
+    return await index.getAll(IDBKeyRange.only(false))
   }, [])
 
   const markSecurityLogsSynced = useCallback(async (logIds: string[]) => {
@@ -199,7 +192,7 @@ export function useIndexedDB(sessionId: string) {
     const tx = dbRef.current.transaction('offline_periods', 'readonly')
     const store = tx.objectStore('offline_periods')
     const index = store.index('by-synced')
-    return await index.getAll(false)
+    return await index.getAll(IDBKeyRange.only(false))
   }, [])
 
   const clearSessionData = useCallback(async () => {

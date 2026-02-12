@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { use, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,7 +24,11 @@ import {
   WifiOff, 
   CheckCircle,
   Loader2,
-  Maximize2
+  Maximize2,
+  SkipForward,
+  Eye,
+  Circle,
+  CheckCircle2
 } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { useSecurityMonitor } from '@/hooks/useSecurityMonitor'
@@ -35,14 +39,16 @@ import { formatTimeRemaining, encryptProofString } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface ExamSessionPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default function ExamSessionPage({ params }: ExamSessionPageProps) {
+  const { id: sessionId } = use(params)
   const router = useRouter()
   const [session, setSession] = useState<ExamSession | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set())
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -53,8 +59,6 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   const [isOffline, setIsOffline] = useState(false)
   const [proofString, setProofString] = useState('')
   const [showProofDialog, setShowProofDialog] = useState(false)
-
-  const sessionId = params.id
 
   // IndexedDB for offline storage
   const {
@@ -88,21 +92,23 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
         return
       }
 
-      setSession(sessionData)
+      // Type assertion for joined data
+      const typedSession = sessionData as any
+      setSession(typedSession)
 
       // Get questions
       const { data: questionsData } = await supabaseClient
         .from('questions')
         .select('*, options(*)')
-        .eq('quiz_id', sessionData.quiz_id)
+        .eq('quiz_id', typedSession.quiz_id)
         .order('position')
 
       if (questionsData) {
-        setQuestions(questionsData)
+        setQuestions(questionsData as any)
       }
 
       // Calculate time remaining
-      const settings = sessionData.quiz?.settings as QuizSettings
+      const settings = typedSession.quiz?.settings as QuizSettings
       const startTime = new Date(sessionData.started_at).getTime()
       const durationMs = settings.duration * 60 * 1000
       const endTime = startTime + durationMs
@@ -117,7 +123,7 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
       if (answersData) {
         const answersMap: Record<string, string> = {}
-        answersData.forEach((a) => {
+        answersData.forEach((a: any) => {
           answersMap[a.question_id] = a.selected_option_id || a.text_response || ''
         })
         setAnswers(answersMap)
@@ -190,6 +196,19 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       })
       await syncOfflineData()
     },
+    onSecurityWarning: (message, flagged) => {
+      if (flagged) {
+        toast.error('Security Alert', {
+          description: message,
+          duration: 10000,
+        })
+      } else {
+        toast.warning('Security Notice', {
+          description: message,
+          duration: 5000,
+        })
+      }
+    },
   })
 
   // Start heartbeat on mount
@@ -197,6 +216,57 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
     startHeartbeat()
     return () => stopHeartbeat()
   }, [])
+
+  // Real-time session monitoring for security enforcement
+  useEffect(() => {
+    if (!sessionId) return
+
+    // Subscribe to session changes
+    const channel = supabaseClient
+      .channel(`session-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'exam_sessions',
+          filter: `id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const updatedSession = payload.new as any
+          
+          // Check if session was flagged or terminated
+          if (updatedSession.status === 'flagged' && session?.status !== 'flagged') {
+            toast.error('Session Flagged', {
+              description: 'Security violation detected. Your session has been flagged for review.',
+              duration: 10000,
+            })
+            setSession(updatedSession)
+          }
+          
+          if (updatedSession.status === 'terminated') {
+            toast.error('Session Terminated', {
+              description: 'Your session has been terminated due to security violations.',
+              duration: Infinity,
+            })
+            // Force submission and logout
+            setTimeout(() => {
+              router.push('/exam/completed')
+            }, 3000)
+          }
+          
+          // Update strikes display
+          if (updatedSession.strikes > (session?.strikes || 0)) {
+            setSession(updatedSession)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabaseClient.removeChannel(channel)
+    }
+  }, [sessionId, session?.status, session?.strikes])
 
   // Sync offline data
   const syncOfflineData = async () => {
@@ -232,6 +302,13 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   // Handle answer change
   const handleAnswerChange = async (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    
+    // Remove from skipped if previously skipped
+    setSkippedQuestions((prev) => {
+      const newSet = new Set(prev)
+      newSet.delete(questionId)
+      return newSet
+    })
 
     // Save to IndexedDB
     const question = questions.find((q) => q.id === questionId)
@@ -262,7 +339,25 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
     }
   }
 
-  // Submit exam
+  // Handle skip question
+  const handleSkipQuestion = () => {
+    const currentQ = questions[currentQuestion]
+    
+    // Mark as skipped if not answered
+    if (!answers[currentQ.id]) {
+      setSkippedQuestions((prev) => new Set(prev).add(currentQ.id))
+    }
+    
+    // Move to next question
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion((prev) => prev + 1)
+    } else {
+      // If on last question, show submit dialog
+      setShowSubmitDialog(true)
+    }
+  }
+
+  // Submit exam via secure API
   const submitExam = async (auto = false) => {
     setSubmitting(true)
 
@@ -270,41 +365,42 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       // Sync any remaining offline data
       await syncOfflineData()
 
-      // Calculate score
-      let score = 0
-      for (const [questionId, answerValue] of Object.entries(answers)) {
-        const question = questions.find((q) => q.id === questionId)
-        if (question?.type === 'mcq' && question.options) {
-          const selectedOption = question.options.find((o) => o.id === answerValue)
-          if (selectedOption?.is_correct) {
-            score += question.points
-          }
-        }
+      // Call secure server-side grading API
+      const response = await fetch('/api/exam/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          device_fingerprint: session?.device_fingerprint,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit exam')
       }
 
-      // Update session
-      const { error } = await supabaseClient
-        .from('exam_sessions')
-        .update({
-          status: securityState.strikes >= 3 ? 'flagged' : 'submitted',
-          completed_at: new Date().toISOString(),
-          score,
-        })
-        .eq('id', sessionId)
-
-      if (error) throw error
-
+      // Handle offline submission with proof
       if (!navigator.onLine) {
-        // Generate proof string for offline submission
         const proof = encryptProofString(answers, Date.now(), sessionId)
         setProofString(proof)
         setShowProofDialog(true)
       } else {
+        // Show appropriate message based on status
+        if (result.status === 'flagged') {
+          toast.warning(result.message)
+        } else {
+          toast.success(result.message)
+        }
+        
         router.push('/exam/completed')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Submit error:', error)
-      toast.error('Failed to submit exam')
+      toast.error(error.message || 'Failed to submit exam')
     } finally {
       setSubmitting(false)
     }
@@ -372,6 +468,15 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
                 ))}
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => router.push(`/exam/session/${sessionId}/review`)}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Review
+            </Button>
             <Button variant="outline" size="sm" onClick={enterFullscreen}>
               <Maximize2 className="h-4 w-4" />
             </Button>
@@ -445,7 +550,7 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <Button
             variant="outline"
             onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
@@ -455,6 +560,15 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
           </Button>
 
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleSkipQuestion}
+              className="gap-2"
+            >
+              <SkipForward className="h-4 w-4" />
+              Skip
+            </Button>
+            
             {currentQuestion < questions.length - 1 ? (
               <Button
                 onClick={() => setCurrentQuestion((prev) => Math.min(questions.length - 1, prev + 1))}
@@ -471,19 +585,49 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
         {/* Question Navigator */}
         <div className="mt-8 pt-8 border-t">
-          <p className="text-sm text-muted-foreground mb-3">Jump to question:</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-muted-foreground">Jump to question:</p>
+            <div className="flex gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                Answered
+              </div>
+              <div className="flex items-center gap-1">
+                <SkipForward className="h-3 w-3 text-amber-500" />
+                Skipped
+              </div>
+              <div className="flex items-center gap-1">
+                <Circle className="h-3 w-3" />
+                Unanswered
+              </div>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
-            {questions.map((q, i) => (
-              <Button
-                key={q.id}
-                variant={currentQuestion === i ? 'default' : answers[q.id] ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setCurrentQuestion(i)}
-                className="w-10 h-10 p-0"
-              >
-                {answers[q.id] ? <CheckCircle className="h-4 w-4" /> : i + 1}
-              </Button>
-            ))}
+            {questions.map((q, i) => {
+              const isAnswered = !!answers[q.id]
+              const isSkipped = skippedQuestions.has(q.id)
+              const isCurrent = currentQuestion === i
+              
+              return (
+                <Button
+                  key={q.id}
+                  variant={isCurrent ? 'default' : isAnswered ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setCurrentQuestion(i)}
+                  className={`w-10 h-10 p-0 ${
+                    isSkipped && !isAnswered ? 'border-amber-500 bg-amber-50 hover:bg-amber-100' : ''
+                  }`}
+                >
+                  {isAnswered ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : isSkipped ? (
+                    <SkipForward className="h-4 w-4 text-amber-500" />
+                  ) : (
+                    i + 1
+                  )}
+                </Button>
+              )
+            })}
           </div>
         </div>
       </main>
@@ -492,30 +636,87 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Submit Exam?</DialogTitle>
-            <DialogDescription>
-              You have answered {Object.keys(answers).length} of {questions.length} questions.
-              {Object.keys(answers).length < questions.length && (
-                <span className="text-amber-600 block mt-2">
-                  Warning: You have {questions.length - Object.keys(answers).length} unanswered questions.
-                </span>
+            <DialogTitle>⚠️ Final Submission Confirmation</DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>You are about to submit your exam. This action <strong>CANNOT be undone</strong>.</p>
+              
+              <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Answered:
+                  </span>
+                  <strong>{Object.keys(answers).length} questions</strong>
+                </div>
+                
+                {skippedQuestions.size > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <SkipForward className="h-4 w-4 text-amber-500" />
+                      Skipped:
+                    </span>
+                    <strong className="text-amber-600">
+                      {skippedQuestions.size} questions
+                      {skippedQuestions.size > 0 && (
+                        <span className="text-xs ml-2">
+                          (Q{Array.from(skippedQuestions).map(qId => questions.findIndex(q => q.id === qId) + 1).join(', Q')})
+                        </span>
+                      )}
+                    </strong>
+                  </div>
+                )}
+                
+                {questions.length - Object.keys(answers).length > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                      Unanswered:
+                    </span>
+                    <strong className="text-red-600">
+                      {questions.length - Object.keys(answers).length} questions
+                    </strong>
+                  </div>
+                )}
+              </div>
+              
+              {(skippedQuestions.size > 0 || questions.length - Object.keys(answers).length > 0) && (
+                <p className="text-amber-600 font-medium">
+                  ⚠️ Skipped and unanswered questions will receive 0 points.
+                </p>
               )}
+              
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to submit now?
+              </p>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
-              Continue Exam
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSubmitDialog(false)
+                router.push(`/exam/session/${sessionId}/review`)
+              }}
+              className="gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              Review Answers
             </Button>
-            <Button onClick={() => submitExam()} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Exam'
-              )}
-            </Button>
+            <div className="flex gap-2 flex-1 justify-end">
+              <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => submitExam()} disabled={submitting} variant="destructive">
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Yes, Submit Exam'
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

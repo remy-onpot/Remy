@@ -11,10 +11,14 @@ interface SecurityMonitorOptions {
   strictness: 'low' | 'medium' | 'high'
 }
 
+// Fair violation detection thresholds
+const BLUR_THRESHOLD_MS = 5000 // Only flag if blur lasts > 5 seconds
+const VIOLATION_COOLDOWN_MS = 2000 // Prevent duplicate violations
+
 const STRIKE_THRESHOLDS = {
-  low: { warning: 5000, strike: 30000, maxStrikes: 5 },
-  medium: { warning: 3000, strike: 15000, maxStrikes: 3 },
-  high: { warning: 2000, strike: 10000, maxStrikes: 3 },
+  low: { warning: 10000, strike: 30000, maxStrikes: 5 },
+  medium: { warning: 7000, strike: 20000, maxStrikes: 3 },
+  high: { warning: 5000, strike: 15000, maxStrikes: 3 },
 }
 
 export function useSecurityMonitor({
@@ -35,9 +39,11 @@ export function useSecurityMonitor({
 
   const lastCheckRef = useRef<number>(Date.now())
   const focusStartRef = useRef<number>(Date.now())
+  const blurTimerRef = useRef<NodeJS.Timeout | null>(null)
   const isFullscreenRef = useRef<boolean>(false)
   const eventsQueueRef = useRef<LocalSecurityEvent[]>([])
   const timeWarpIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const lastViolationRef = useRef<number>(0) // Cooldown tracker
 
   const threshold = STRIKE_THRESHOLDS[strictness]
 
@@ -66,35 +72,55 @@ export function useSecurityMonitor({
     }
   }, [sessionId])
 
-  // Handle focus change
+  // Handle focus change with fair debounced detection
   const handleFocusChange = useCallback((isFocused: boolean) => {
     const now = Date.now()
-    const awayDuration = now - focusStartRef.current
 
     if (!isFocused) {
-      // Lost focus
+      // Lost focus - start timer
       focusStartRef.current = now
       setSecurityState(prev => ({ ...prev, is_focused: false }))
 
-      if (awayDuration > threshold.warning) {
-        setSecurityState(prev => {
-          const newWarnings = prev.warnings + 1
-          if (awayDuration > threshold.strike) {
-            const newStrikes = prev.strikes + 1
-            recordEvent('focus_lost', Math.floor(awayDuration / 1000))
-            onStrike(newStrikes)
-
-            if (newStrikes >= threshold.maxStrikes) {
-              onAutoSubmit()
-            }
-            return { ...prev, strikes: newStrikes, warnings: 0 }
-          }
-          onWarning(`Warning: You were away for ${Math.floor(awayDuration / 1000)}s`)
-          return { ...prev, warnings: newWarnings }
-        })
+      // Clear any existing timer
+      if (blurTimerRef.current) {
+        clearTimeout(blurTimerRef.current)
       }
+
+      // Start new timer - only flag if blur persists beyond threshold
+      blurTimerRef.current = setTimeout(() => {
+        const blurDuration = Date.now() - focusStartRef.current
+
+        // Check cooldown to prevent duplicate violations
+        if (now - lastViolationRef.current < VIOLATION_COOLDOWN_MS) {
+          return
+        }
+
+        lastViolationRef.current = now
+
+        // Log violation and apply strike
+        recordEvent('focus_lost', Math.floor(blurDuration / 1000))
+        
+        setSecurityState(prev => {
+          const newStrikes = prev.strikes + 1
+          const newWarnings = prev.warnings + 1
+          
+          onWarning(`Warning: You were away for ${Math.floor(blurDuration / 1000)}s`)
+          onStrike(newStrikes)
+
+          if (newStrikes >= threshold.maxStrikes) {
+            onAutoSubmit()
+          }
+          
+          return { ...prev, strikes: newStrikes, warnings: newWarnings }
+        })
+      }, BLUR_THRESHOLD_MS)
     } else {
-      // Gained focus
+      // Gained focus - cancel timer if still running
+      if (blurTimerRef.current) {
+        clearTimeout(blurTimerRef.current)
+        blurTimerRef.current = null
+      }
+      
       setSecurityState(prev => ({ ...prev, is_focused: true }))
       focusStartRef.current = now
     }
@@ -129,8 +155,10 @@ export function useSecurityMonitor({
     }, 1000)
   }, [onWarning, onAutoSubmit, recordEvent, threshold])
 
-  // Fullscreen enforcement
+  // Fullscreen enforcement (only on high strictness)
   const enterFullscreen = useCallback(async () => {
+    if (strictness !== 'high') return // Only enforce on high strictness
+
     try {
       const elem = document.documentElement
       if (elem.requestFullscreen) {
@@ -141,9 +169,11 @@ export function useSecurityMonitor({
     } catch (error) {
       console.error('Fullscreen error:', error)
     }
-  }, [])
+  }, [strictness])
 
   const handleFullscreenChange = useCallback(() => {
+    if (strictness !== 'high') return // Only enforce on high strictness
+
     const isFullscreen = !!document.fullscreenElement
     isFullscreenRef.current = isFullscreen
     setSecurityState(prev => ({ ...prev, is_fullscreen: isFullscreen }))
@@ -165,11 +195,11 @@ export function useSecurityMonitor({
         enterFullscreen()
       }, 100)
     }
-  }, [onWarning, onAutoSubmit, recordEvent, threshold, enterFullscreen])
+  }, [strictness, onWarning, onAutoSubmit, recordEvent, threshold, enterFullscreen])
 
   // Setup event listeners
   useEffect(() => {
-    // Visibility API
+    // Visibility API (tab switches)
     const handleVisibilityChange = () => {
       const isVisible = document.visibilityState === 'visible'
       handleFocusChange(isVisible)
@@ -182,13 +212,33 @@ export function useSecurityMonitor({
     const handleFocus = () => handleFocusChange(true)
     const handleBlur = () => handleFocusChange(false)
 
-    // Mouse leave
-    const handleMouseLeave = () => {
-      recordEvent('mouse_leave')
-      onWarning('Mouse left the exam window')
+    // Right-click prevention (medium/high strictness only)
+    const handleContextMenu = (e: MouseEvent) => {
+      if (strictness === 'medium' || strictness === 'high') {
+        e.preventDefault()
+        recordEvent('mouse_leave') // Reusing this event type for right-click
+        onWarning('Right-click is disabled during the exam')
+      }
     }
 
-    // Fullscreen change
+    // Copy/Paste detection (medium/high strictness only)
+    const handleCopy = (e: ClipboardEvent) => {
+      if (strictness === 'medium' || strictness === 'high') {
+        e.preventDefault()
+        recordEvent('mouse_leave') // Reusing for copy attempts
+        onWarning('Copying is disabled during the exam')
+      }
+    }
+
+    const handlePaste = (e: ClipboardEvent) => {
+      if (strictness === 'medium' || strictness === 'high') {
+        e.preventDefault()
+        recordEvent('mouse_leave') // Reusing for paste attempts
+        onWarning('Pasting is disabled during the exam')
+      }
+    }
+
+    // Fullscreen change (high strictness only)
     const handleFullscreen = () => handleFullscreenChange()
 
     // Online/Offline
@@ -204,7 +254,9 @@ export function useSecurityMonitor({
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('focus', handleFocus)
     window.addEventListener('blur', handleBlur)
-    document.addEventListener('mouseleave', handleMouseLeave)
+    document.addEventListener('contextmenu', handleContextMenu)
+    document.addEventListener('copy', handleCopy)
+    document.addEventListener('paste', handlePaste)
     document.addEventListener('fullscreenchange', handleFullscreen)
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
@@ -212,24 +264,33 @@ export function useSecurityMonitor({
     // Start time warp detection
     startTimeWarpDetection()
 
-    // Enter fullscreen
-    enterFullscreen()
+    // Enter fullscreen (only on high strictness)
+    if (strictness === 'high') {
+      enterFullscreen()
+    }
 
     // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('blur', handleBlur)
-      document.removeEventListener('mouseleave', handleMouseLeave)
+      document.removeEventListener('contextmenu', handleContextMenu)
+      document.removeEventListener('copy', handleCopy)
+      document.removeEventListener('paste', handlePaste)
       document.removeEventListener('fullscreenchange', handleFullscreen)
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
+
+      // Clear blur timer
+      if (blurTimerRef.current) {
+        clearTimeout(blurTimerRef.current)
+      }
 
       if (timeWarpIntervalRef.current) {
         clearInterval(timeWarpIntervalRef.current)
       }
     }
-  }, [handleFocusChange, handleFullscreenChange, startTimeWarpDetection, enterFullscreen, onWarning, recordEvent])
+  }, [handleFocusChange, handleFullscreenChange, startTimeWarpDetection, enterFullscreen, onWarning, recordEvent, strictness])
 
   return {
     securityState,

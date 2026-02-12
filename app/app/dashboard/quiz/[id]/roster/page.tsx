@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -18,15 +18,16 @@ import {
   Users
 } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
-import { RosterEntry, Quiz } from '@/types'
+import { RosterEntry, Quiz, QuizSettings } from '@/types'
 import { parseCSV, downloadCSV } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface RosterPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default function RosterPage({ params }: RosterPageProps) {
+  const { id: quizId } = use(params)
   const router = useRouter()
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [roster, setRoster] = useState<RosterEntry[]>([])
@@ -36,7 +37,11 @@ export default function RosterPage({ params }: RosterPageProps) {
   const [csvText, setCsvText] = useState('')
   const [showCsvInput, setShowCsvInput] = useState(false)
 
-  const quizId = params.id
+  // Helper function to transform database row to Quiz type
+  const transformQuiz = (row: any): Quiz => ({
+    ...row,
+    settings: row.settings as QuizSettings
+  })
 
   useEffect(() => {
     loadData()
@@ -52,7 +57,7 @@ export default function RosterPage({ params }: RosterPageProps) {
         .single()
 
       if (quizData) {
-        setQuiz(quizData)
+        setQuiz(transformQuiz(quizData))
       }
 
       // Get roster
@@ -176,7 +181,11 @@ export default function RosterPage({ params }: RosterPageProps) {
   }
 
   const handleExportRoster = () => {
-    downloadCSV(roster, `roster_${quiz?.code}.csv`)
+    const rosterData = roster.map(entry => ({
+      index_number: entry.index_number,
+      student_name: entry.student_name
+    }))
+    downloadCSV(rosterData, `roster_${quiz?.code}.csv`)
   }
 
   if (loading) {

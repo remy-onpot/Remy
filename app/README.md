@@ -111,6 +111,17 @@ index_number,student_name
 
 ## Deployment
 
+### Production Deployment
+
+📚 **See [DEPLOYMENT.md](../DEPLOYMENT.md) for comprehensive production setup guide**
+
+Key steps:
+1. Set up Supabase project and run SQL schema
+2. Configure environment variables
+3. Deploy to Vercel or your preferred platform
+4. Create lecturer accounts via Supabase Auth
+5. Test all functionality before going live
+
 ### Vercel (Recommended)
 
 1. Push to GitHub
@@ -125,6 +136,17 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
+
+## Production Notes
+
+✅ **This app is production-ready with:**
+- Row Level Security (RLS) policies for data protection
+- Real Supabase integration (no mock data)
+- Proper error handling and validation
+- Offline support via IndexedDB
+- Real-time monitoring with Supabase Realtime
+- Secure authentication for lecturers
+- Passwordless exam access for students (roster-based)
 
 ## License
 

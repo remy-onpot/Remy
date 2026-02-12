@@ -7,6 +7,7 @@ interface HeartbeatOptions {
   interval?: number
   onDisconnect?: () => void
   onReconnect?: () => void
+  onSecurityWarning?: (message: string, flagged: boolean) => void
 }
 
 export function useHeartbeat({
@@ -14,6 +15,7 @@ export function useHeartbeat({
   interval = 10000, // 10 seconds default
   onDisconnect,
   onReconnect,
+  onSecurityWarning,
 }: HeartbeatOptions) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const isOnlineRef = useRef<boolean>(true)
@@ -22,6 +24,7 @@ export function useHeartbeat({
   const sendHeartbeat = useCallback(async () => {
     try {
       const battery = await (navigator as any).getBattery?.().catch(() => null)
+      const currentUserAgent = navigator.userAgent
       
       const payload = {
         session_token: sessionId,
@@ -29,6 +32,7 @@ export function useHeartbeat({
         focus_status: document.visibilityState === 'visible' ? 'focused' : 'hidden',
         battery_level: battery?.level,
         is_fullscreen: !!document.fullscreenElement,
+        user_agent: currentUserAgent,
       }
 
       const response = await fetch('/api/heartbeat', {
@@ -44,6 +48,13 @@ export function useHeartbeat({
           isOnlineRef.current = true
           onReconnect?.()
         }
+        
+        // Check for security warnings in response
+        const data = await response.json()
+        if (data.warning) {
+          console.warn('Security warning:', data.warning)
+          onSecurityWarning?.(data.warning, data.flagged || false)
+        }
       } else {
         throw new Error('Heartbeat failed')
       }
@@ -55,7 +66,7 @@ export function useHeartbeat({
         onDisconnect?.()
       }
     }
-  }, [sessionId, onDisconnect, onReconnect])
+  }, [sessionId, onDisconnect, onReconnect, onSecurityWarning])
 
   const startHeartbeat = useCallback(() => {
     if (intervalRef.current) return

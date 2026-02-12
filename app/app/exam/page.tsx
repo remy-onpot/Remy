@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Shield, AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
-import { generateDeviceFingerprint } from '@/lib/utils'
+import { generateDeviceFingerprint, getUserAgent } from '@/lib/utils'
 
 export default function ExamEntryPage() {
   const router = useRouter()
@@ -24,17 +24,29 @@ export default function ExamEntryPage() {
     setLoading(true)
     setError('')
 
+    // Client-side validation
+    if (!code.trim()) {
+      setError('Please enter a quiz code')
+      setLoading(false)
+      return
+    }
+    if (!indexNumber.trim()) {
+      setError('Please enter your index number')
+      setLoading(false)
+      return
+    }
+
     try {
       // Validate quiz code
       const { data: quiz, error: quizError } = await supabaseClient
         .from('quizzes')
         .select('*')
-        .eq('code', code.toUpperCase())
+        .eq('code', code.toUpperCase().trim())
         .eq('status', 'live')
         .single()
 
       if (quizError || !quiz) {
-        setError('Invalid quiz code or quiz is not live')
+        setError('Invalid quiz code or quiz is not currently live')
         return
       }
 
@@ -43,11 +55,11 @@ export default function ExamEntryPage() {
         .from('roster')
         .select('*')
         .eq('quiz_id', quiz.id)
-        .eq('index_number', indexNumber)
+        .eq('index_number', indexNumber.trim())
         .single()
 
       if (rosterError || !rosterEntry) {
-        setError('Index number not found in roster')
+        setError('Index number not found in roster for this exam')
         return
       }
 
@@ -56,24 +68,43 @@ export default function ExamEntryPage() {
         .from('exam_sessions')
         .select('*')
         .eq('quiz_id', quiz.id)
-        .eq('index_number', indexNumber)
-        .eq('status', 'in_progress')
+        .eq('index_number', indexNumber.trim())
+        .in('status', ['in_progress', 'submitted', 'flagged'])
         .single()
 
       if (existingSession) {
+        if (existingSession.status === 'submitted' || existingSession.status === 'flagged') {
+          // Check if quiz has ended - if so, redirect to results
+          if (quiz.status === 'ended') {
+            router.push(`/exam/session/${existingSession.id}/results`)
+            return
+          }
+          // Quiz still live - show waiting message
+          setError('Exam submitted. Results will be available when the quiz ends.')
+          return
+        }
         // Resume existing session
         router.push(`/exam/session/${existingSession.id}`)
         return
       }
 
+      // Check if quiz is still accepting new sessions
+      if (quiz.status !== 'live') {
+        setError('This quiz is no longer accepting submissions')
+        return
+      }
+
       // Create new session
       const deviceFingerprint = generateDeviceFingerprint()
+      const userAgent = getUserAgent()
+      
       const { data: session, error: sessionError } = await supabaseClient
         .from('exam_sessions')
         .insert({
           quiz_id: quiz.id,
           index_number: indexNumber,
           device_fingerprint: deviceFingerprint,
+          user_agent: userAgent,
           status: 'in_progress'
         })
         .select()
@@ -85,8 +116,9 @@ export default function ExamEntryPage() {
       }
 
       router.push(`/exam/session/${session.id}`)
-    } catch (err) {
-      setError('An unexpected error occurred')
+    } catch (err: any) {
+      console.error('Exam entry error:', err)
+      setError(err.message || 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
