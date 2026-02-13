@@ -45,55 +45,61 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-[#E2E8F0] shadow-sm">
+        <CardHeader className="text-center bg-white border-b border-[#E2E8F0]">
           <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-primary" />
+            <Shield className="h-12 w-12 text-[#0F172A]" strokeWidth={1.5} />
           </div>
-          <CardTitle className="text-2xl">Lecturer Login</CardTitle>
-          <CardDescription>
-            Sign in to access your dashboard and manage exams
+          <CardTitle className="text-2xl font-bold text-[#0F172A]">Lecturer Access</CardTitle>
+          <CardDescription className="text-slate-600">
+            Sign in to access the assessment management system
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="mb-4 border-red-300 bg-red-50">
+              <AlertCircle className="h-4 w-4" strokeWidth={1.5} />
+              <AlertDescription className="text-red-700">{error}</AlertDescription>
             </Alert>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 font-semibold">Email Address</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="lecturer@university.edu"
+                placeholder="lecturer@institution.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="border-[#E2E8F0] focus:border-[#10B981]"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-slate-700 font-semibold">Password</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="border-[#E2E8F0] focus:border-[#10B981]"
                 required
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-[#0F172A] hover:bg-slate-900 text-white font-semibold" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} />
+                  Authenticating...
                 </>
               ) : (
                 'Sign In'

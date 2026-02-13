@@ -28,6 +28,7 @@ import { supabaseClient } from '@/lib/supabase'
 import { Quiz, QuizSettings } from '@/types'
 import { formatDuration } from '@/lib/utils'
 import { toast } from 'sonner'
+import styles from './dashboard.module.css'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -87,193 +88,207 @@ export default function DashboardPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'live':
-        return <Badge className="bg-green-500">Live</Badge>
+        return <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-300 font-semibold text-xs">Live</Badge>
       case 'draft':
-        return <Badge variant="secondary">Draft</Badge>
+        return <Badge className="bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs">Draft</Badge>
       case 'ended':
-        return <Badge variant="outline">Ended</Badge>
+        return <Badge className="bg-slate-200 text-slate-800 border border-slate-400 font-semibold text-xs">Concluded</Badge>
       case 'archived':
-        return <Badge variant="destructive">Archived</Badge>
+        return <Badge className="bg-amber-100 text-amber-700 border border-amber-300 font-semibold text-xs">Archived</Badge>
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge className="bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs">{status}</Badge>
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <div className="text-center">
+          <div className={styles.loaderContainer}>
+            <Loader2 className="h-8 w-8 text-[#0F172A] animate-spin" />
+          </div>
+          <p className="text-slate-600 font-medium mt-3">Loading assessments...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold"><span>Nimde</span><span className="text-orange-500">Quizzer</span></span>
+      <header className={`sticky top-0 z-40 border-b border-[#E2E8F0] bg-white backdrop-blur-sm transition-all ${styles.headerSlide}`}>
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <div className={`flex items-center gap-3 ${styles.logoFade}`}>
+            <div className="h-10 w-10 rounded-lg bg-[#0F172A] flex items-center justify-center shadow-sm">
+              <Shield className="h-5 w-5 text-white" strokeWidth={1.5} />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-bold text-[#0F172A]">NimdeQuizzer</span>
+              <span className="text-xs text-slate-500">Institution Platform</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-6">
+            <span className="text-sm text-slate-600 hidden sm:block">
               {user?.email}
             </span>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+            >
+              <LogOut className="h-4 w-4 mr-2" strokeWidth={1.5} />
+              Sign Out
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Manage your exams and monitor students</p>
+      <main className="container mx-auto px-6 py-12">
+        {/* Page Title Section */}
+        <div className={`mb-12 ${styles.titleFade}`}>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-[#0F172A] mb-2" style={{lineHeight: '1.2'}}>
+                Assessment Dashboard
+              </h1>
+              <p className="text-lg text-slate-600 font-normal">
+                Manage examinations, monitor student progress, and oversee assessment integrity
+              </p>
+            </div>
+            <Link href="/dashboard/quiz/new">
+              <Button className="gap-2 bg-[#0F172A] hover:bg-slate-900 text-white font-semibold shadow-sm hover:shadow-md transition-all">
+                <Plus className="h-4 w-4" strokeWidth={1.5} />
+                Create Assessment
+              </Button>
+            </Link>
           </div>
-          <Link href="/dashboard/quiz/new">
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Quiz
-            </Button>
-          </Link>
         </div>
 
-        {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Quizzes</p>
-                  <p className="text-3xl font-bold">{quizzes.length}</p>
-                </div>
-                <Shield className="h-8 w-8 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Live Exams</p>
-                  <p className="text-3xl font-bold">
-                    {quizzes.filter(q => q.status === 'live').length}
-                  </p>
-                </div>
-                <Play className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Drafts</p>
-                  <p className="text-3xl font-bold">
-                    {quizzes.filter(q => q.status === 'draft').length}
-                  </p>
-                </div>
-                <Clock className="h-8 w-8 text-amber-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-3xl font-bold">
-                    {quizzes.filter(q => q.status === 'ended').length}
-                  </p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
+        {/* Stats Grid - Midnight & Mint Theme */}
+        <div className={`grid md:grid-cols-4 gap-6 mb-12 ${styles.statsStagger}`}>
+          {[
+            { label: 'Total Assessments', value: quizzes.length, icon: Shield, color: 'navy' },
+            { label: 'Active Examinations', value: quizzes.filter(q => q.status === 'live').length, icon: Play, color: 'emerald' },
+            { label: 'Draft', value: quizzes.filter(q => q.status === 'draft').length, icon: Clock, color: 'slate' },
+            { label: 'Concluded', value: quizzes.filter(q => q.status === 'ended').length, icon: BarChart3, color: 'slate' },
+          ].map((stat, idx) => (
+            <div key={idx} className={styles.statCard}>
+              <Card className="border-[#E2E8F0] h-full hover:border-slate-400 hover:shadow-sm transition-all" style={{animationDelay: `${idx * 80}ms`}}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 tracking-wide mb-2">{stat.label}</p>
+                      <p className="text-3xl font-bold text-[#0F172A]">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${
+                      stat.color === 'navy' ? 'bg-slate-100 border border-slate-200' :
+                      stat.color === 'emerald' ? 'bg-emerald-50 border border-emerald-200' :
+                      'bg-slate-50 border border-slate-200'
+                    }`}>
+                      <stat.icon className={`h-5 w-5 ${
+                        stat.color === 'navy' ? 'text-[#0F172A]' :
+                        stat.color === 'emerald' ? 'text-[#10B981]' :
+                        'text-slate-600'
+                      }`} strokeWidth={1.5} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
         </div>
 
-        {/* Quizzes List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Quizzes</CardTitle>
-            <CardDescription>
-              Manage and monitor all your created exams
-            </CardDescription>
+        {/* Assessments Section */}
+        <Card className={`border-[#E2E8F0] shadow-sm hover:shadow-md transition-all ${styles.contentFade}`}>
+          <CardHeader className="border-b border-[#E2E8F0] bg-white p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold text-[#0F172A] mb-1">All Assessments</CardTitle>
+                <CardDescription className="text-slate-600">
+                  {quizzes.length} {quizzes.length === 1 ? 'assessment' : 'assessments'} • Manage and administer all created examinations
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {quizzes.length === 0 ? (
-              <div className="text-center py-12">
-                <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No quizzes yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first quiz to get started
+              <div className="text-center py-16 px-4">
+                <div className={`inline-flex h-14 w-14 rounded-lg bg-slate-100 items-center justify-center mb-4 ${styles.emptyIcon}`}>
+                  <Shield className="h-7 w-7 text-slate-400" strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-bold text-[#0F172A] mb-1">No assessments created</h3>
+                <p className="text-slate-500 mb-6 max-w-xs mx-auto">
+                  Create your first assessment to begin managing student examinations
                 </p>
                 <Link href="/dashboard/quiz/new">
-                  <Button>Create Quiz</Button>
+                  <Button className="bg-[#0F172A] hover:bg-slate-900 text-white">
+                    Create Assessment
+                  </Button>
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4">
-                {quizzes.map((quiz) => (
+              <div className={styles.quizTable}>
+                {quizzes.map((quiz, idx) => (
                   <div
                     key={quiz.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
+                    className={`flex items-center justify-between p-5 border-b border-[#E2E8F0] hover:bg-slate-50 transition-colors group cursor-pointer ${styles.quizRow}`}
+                    style={{animationDelay: `${idx * 50}ms`}}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-primary" />
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-slate-100 border border-[#E2E8F0] flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-[#0F172A]" strokeWidth={1.5} />
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{quiz.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>Code: {quiz.code}</span>
-                          <span>•</span>
-                          <span>{formatDuration((quiz.settings as any).duration)}</span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-[#0F172A] text-base truncate group-hover:text-slate-700 transition-colors">{quiz.title}</h3>
+                        <div className="flex items-center gap-3 text-sm text-slate-500 mt-0.5">
+                          <code className="font-mono text-xs bg-slate-50 px-2 py-1 rounded border border-[#E2E8F0] text-slate-700">{quiz.code}</code>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            {formatDuration((quiz.settings as any).duration)}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 ml-4 flex-shrink-0">
                       {getStatusBadge(quiz.status)}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/quiz/${quiz.id}`}>
-                              Edit Quiz
+                            <Link href={`/dashboard/quiz/${quiz.id}`} className="cursor-pointer">
+                              Edit Assessment
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/quiz/${quiz.id}/roster`}>
+                            <Link href={`/dashboard/quiz/${quiz.id}/roster`} className="cursor-pointer">
                               Manage Roster
                             </Link>
                           </DropdownMenuItem>
                           {quiz.status === 'live' && (
                             <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/quiz/${quiz.id}/monitor`}>
-                                <Users className="h-4 w-4 mr-2" />
+                              <Link href={`/dashboard/quiz/${quiz.id}/monitor`} className="cursor-pointer">
+                                <Users className="h-4 w-4 mr-2" strokeWidth={1.5} />
                                 Live Monitor
                               </Link>
                             </DropdownMenuItem>
                           )}
                           {quiz.status === 'ended' && (
                             <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/quiz/${quiz.id}/analytics`}>
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                Analytics
+                              <Link href={`/dashboard/quiz/${quiz.id}/analytics`} className="cursor-pointer">
+                                <BarChart3 className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                                Results Analysis
                               </Link>
                             </DropdownMenuItem>
                           )}
                           {quiz.status === 'draft' && (
                             <DropdownMenuItem
+                              className="cursor-pointer"
                               onClick={async () => {
                                 await supabaseClient
                                   .from('quizzes')
@@ -282,12 +297,13 @@ export default function DashboardPage() {
                                 fetchQuizzes()
                               }}
                             >
-                              <Play className="h-4 w-4 mr-2" />
-                              Start Exam
+                              <Play className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                              Commence Examination
                             </DropdownMenuItem>
                           )}
                           {quiz.status === 'live' && (
                             <DropdownMenuItem
+                              className="cursor-pointer"
                               onClick={async () => {
                                 await supabaseClient
                                   .from('quizzes')
@@ -296,8 +312,8 @@ export default function DashboardPage() {
                                 fetchQuizzes()
                               }}
                             >
-                              <Square className="h-4 w-4 mr-2" />
-                              End Exam
+                              <Square className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                              Conclude Examination
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

@@ -8,6 +8,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        heading: ["var(--font-heading)", "sans-serif"],
+        body: ["var(--font-body)", "sans-serif"],
+        mono: ["var(--font-mono)", "monospace"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -52,6 +57,20 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* Midnight & Mint Design Tokens */
+        navy: {
+          50: "#f8fafc",
+          100: "#f1f5f9",
+          900: "#0F172A",
+        },
+        emerald: {
+          50: "#f0fdf4",
+          600: "#16a34a",
+          DEFAULT: "#10B981",
+        },
+        amber: {
+          DEFAULT: "#F59E0B",
+        },
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
@@ -62,6 +81,7 @@ module.exports = {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        sm: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
       },
       keyframes: {
         "accordion-down": {

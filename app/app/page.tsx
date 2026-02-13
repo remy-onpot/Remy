@@ -1,38 +1,33 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Shield, Users, BarChart3, Clock, Lock, Eye, Wifi, ChevronRight, Fingerprint, Zap } from 'lucide-react'
+import { Shield, Users, BarChart3, Clock, Lock, Eye, Wifi, ChevronRight, Fingerprint, Zap, CheckCircle2 } from 'lucide-react'
 
 export default function HomePage() {
   return (
-    <div className="landing-grain min-h-screen bg-[#07070e] text-white overflow-hidden">
-
-      {/* ── Atmospheric background ── */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Top-left warm gradient */}
-        <div className="absolute -top-[40%] -left-[20%] w-[70vw] h-[70vw] rounded-full bg-[radial-gradient(circle,rgba(0,255,170,0.07)_0%,transparent_70%)]" />
-        {/* Bottom-right cool gradient */}
-        <div className="absolute -bottom-[30%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-[radial-gradient(circle,rgba(80,120,255,0.05)_0%,transparent_70%)]" />
-      </div>
-
+    <div className="min-h-screen bg-[#F8FAFC]">
       {/* ── Header ── */}
-      <header className="relative z-10 border-b border-white/[0.06] backdrop-blur-xl bg-[#07070e]/60 sticky top-0">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/40 transition-shadow">
-              <Shield className="h-5 w-5 text-[#07070e]" />
+      <header className="border-b border-[#E2E8F0] bg-white sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0F172A] flex items-center justify-center">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-[#10B981]" strokeWidth={1.5} />
             </div>
-            <span className="text-xl font-semibold tracking-tight"><span className="text-white">Nimde</span><span className="text-orange-400">Quizzer</span></span>
+            <span className="text-base sm:text-lg font-bold text-[#0F172A]">NimdeQuizzer</span>
           </Link>
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <Link href="/login">
-              <Button variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors">
-                Lecturer Login
+              <Button variant="outline" size="sm" className="border-[#E2E8F0] text-[#0F172A] text-xs sm:text-sm px-2 sm:px-4">
+                <Users className="h-4 w-4 sm:hidden" strokeWidth={1.5} />
+                <span className="hidden sm:inline">Lecturer Access</span>
+                <span className="sm:hidden">Login</span>
               </Button>
             </Link>
             <Link href="/exam">
-              <Button className="bg-emerald-500 hover:bg-emerald-400 text-[#07070e] font-semibold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all">
-                Take Exam
-                <ChevronRight className="h-4 w-4 ml-1" />
+              <Button size="sm" className="bg-[#10B981] hover:bg-[#059669] text-white gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-4">
+                <Shield className="h-4 w-4 sm:hidden" strokeWidth={1.5} />
+                <span className="hidden sm:inline">Enter Assessment</span>
+                <span className="sm:hidden">Exam</span>
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 hidden sm:inline" strokeWidth={1.5} />
               </Button>
             </Link>
           </nav>
@@ -40,245 +35,247 @@ export default function HomePage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-24">
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
         <div className="max-w-4xl">
-          {/* Overline badge */}
-          <div className="animate-fade-up stagger-1 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400 text-sm font-medium mb-8">
-            <Fingerprint className="h-3.5 w-3.5" />
-            Built for integrity
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] text-[#0F172A] text-xs sm:text-sm font-semibold mb-4 sm:mb-6">
+            <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-[#10B981]" strokeWidth={1.5} />
+            Institutional-grade Platform
           </div>
 
-          {/* Headline — editorial serif */}
-          <h1 className="animate-fade-up stagger-2 font-[family-name:var(--font-instrument)] text-6xl sm:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-8">
-            Exams that
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400">
-              cannot be
-            </span>
-            <br />
-            compromised.
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#0F172A] leading-tight mb-4 sm:mb-6">
+            Secure<br />
+            <span className="text-[#10B981]">Assessment</span><br />
+            Platform
           </h1>
 
           {/* Subheadline */}
-          <p className="animate-fade-up stagger-3 text-lg sm:text-xl text-white/50 max-w-xl leading-relaxed mb-12">
-            A lockdown-grade examination platform with real-time monitoring,
-            offline-first architecture, and multi-layered anti-cheat — built
-            for institutions that take assessment seriously.
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed mb-8 sm:mb-10">
+            Multi-layered security with real-time monitoring, offline resilience, and institutional-grade integrity controls. Built for academic institutions that prioritize assessment authenticity.
           </p>
 
           {/* CTAs */}
-          <div className="animate-fade-up stagger-4 flex flex-wrap gap-4">
-            <Link href="/login">
-              <Button size="lg" className="bg-white text-[#07070e] hover:bg-white/90 font-semibold h-14 px-8 text-base shadow-2xl shadow-white/10 hover:shadow-white/20 transition-all">
-                <Users className="h-5 w-5 mr-2" />
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+            <Link href="/login" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1F2937] text-white gap-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
                 Lecturer Dashboard
               </Button>
             </Link>
-            <Link href="/exam">
-              <Button size="lg" variant="outline" className="border-white/[0.12] bg-white/[0.03] hover:bg-white/[0.06] text-white font-semibold h-14 px-8 text-base backdrop-blur-sm transition-all">
-                <Shield className="h-5 w-5 mr-2" />
-                Enter Exam Room
+            <Link href="/exam" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-[#E2E8F0] text-[#0F172A] gap-2 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
+                Take Assessment
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Floating stats — right side */}
-        <div className="hidden lg:flex flex-col gap-4 absolute right-6 top-40">
-          <div className="animate-fade-in stagger-5 animate-float w-48 p-5 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-xl">
-            <div className="text-3xl font-bold text-emerald-400 mb-1">6</div>
-            <div className="text-sm text-white/40">Security layers active</div>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 mt-12 sm:mt-16 md:mt-24 max-w-3xl">
+          <div className="p-3 sm:p-4 border border-[#E2E8F0] rounded-lg bg-white">
+            <div className="text-2xl sm:text-3xl font-bold text-[#10B981] mb-1">6</div>
+            <div className="text-xs sm:text-sm text-slate-600">Security Layers</div>
           </div>
-          <div className="animate-fade-in stagger-6 animate-float w-48 p-5 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-xl" style={{ animationDelay: '1s' }}>
-            <div className="text-3xl font-bold text-white mb-1">10s</div>
-            <div className="text-sm text-white/40">Heartbeat interval</div>
+          <div className="p-3 sm:p-4 border border-[#E2E8F0] rounded-lg bg-white">
+            <div className="text-2xl sm:text-3xl font-bold text-[#F59E0B] mb-1">10s</div>
+            <div className="text-xs sm:text-sm text-slate-600">Heartbeat Interval</div>
           </div>
-          <div className="animate-fade-in stagger-7 animate-float w-48 p-5 rounded-2xl bg-white/[0.04] border border-white/[0.06] backdrop-blur-xl" style={{ animationDelay: '2s' }}>
-            <div className="text-3xl font-bold text-teal-400 mb-1">100%</div>
-            <div className="text-sm text-white/40">Offline resilient</div>
+          <div className="p-3 sm:p-4 border border-[#E2E8F0] rounded-lg bg-white">
+            <div className="text-2xl sm:text-3xl font-bold text-[#0F172A] mb-1">100%</div>
+            <div className="text-xs sm:text-sm text-slate-600">Offline Resilient</div>
           </div>
         </div>
       </section>
 
-      {/* ── Divider ── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6">
-        <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+      {/* Divider */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="h-px bg-[#E2E8F0]" />
       </div>
 
       {/* ── Features Grid ── */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 py-28">
-        <div className="mb-16">
-          <h2 className="animate-fade-up font-[family-name:var(--font-instrument)] text-4xl sm:text-5xl tracking-tight mb-4">
-            Six layers of
-            <span className="text-emerald-400"> defense</span>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
+        <div className="mb-10 sm:mb-12 md:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] mb-3 sm:mb-4">
+            Six Layers of
+            <span className="text-[#10B981]"> Protection</span>
           </h2>
-          <p className="text-white/40 text-lg max-w-lg">
-            Every angle covered. Every loophole sealed. From browser-level lockdown to server-side verification.
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl">
+            Every institutional requirement covered. From browser-level lockdown to server-side verification.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Card 1 — Focus Monitor */}
-          <div className="feature-card animate-fade-up stagger-1 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-5 group-hover:bg-emerald-500/20 transition-colors">
-              <Eye className="h-6 w-6 text-emerald-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-[#10B981] bg-opacity-10 flex items-center justify-center mb-4">
+              <Eye className="h-6 w-6 text-[#10B981]" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Focus Monitor</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              Detects tab switches, window blur, and mouse leaving the viewport in real-time.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Focus Monitor</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Real-time detection of tab switches, window blur, and focus loss.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Visibility API tracking</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Focus/Blur detection</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Grace period algorithm</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Visibility API tracking</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Focus/Blur detection</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Grace period algorithm</li>
             </ul>
           </div>
 
           {/* Card 2 — Time Warp Detective */}
-          <div className="feature-card animate-fade-up stagger-2 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mb-5 group-hover:bg-amber-500/20 transition-colors">
-              <Clock className="h-6 w-6 text-amber-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-[#F59E0B] bg-opacity-10 flex items-center justify-center mb-4">
+              <Clock className="h-6 w-6 text-[#F59E0B]" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Time Warp Detective</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              Catches app suspension on mobile devices through interval drift detection.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Time Detection</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Catches app suspension through interval drift detection.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-amber-500" />1-second interval checks</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-amber-500" />Mobile-specific protection</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-amber-500" />Auto violation flagging</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#F59E0B]" />1-second interval checks</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#F59E0B]" />Mobile-specific protection</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#F59E0B]" />Auto violation flagging</li>
             </ul>
           </div>
 
           {/* Card 3 — Black Box Recorder */}
-          <div className="feature-card animate-fade-up stagger-3 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center mb-5 group-hover:bg-sky-500/20 transition-colors">
-              <Wifi className="h-6 w-6 text-sky-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-blue-500 bg-opacity-10 flex items-center justify-center mb-4">
+              <Wifi className="h-6 w-6 text-blue-500" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Black Box Recorder</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              All activity persists locally when offline. Automatic sync on reconnect.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Offline Logging</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              All activity persists locally. Automatic sync on reconnect.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-sky-500" />IndexedDB storage</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-sky-500" />Offline event logging</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-sky-500" />Proof string generation</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-blue-500" />IndexedDB storage</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-blue-500" />Offline event logging</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-blue-500" />Proof string generation</li>
             </ul>
           </div>
 
           {/* Card 4 — Fullscreen Enforcement */}
-          <div className="feature-card animate-fade-up stagger-4 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center mb-5 group-hover:bg-rose-500/20 transition-colors">
-              <Lock className="h-6 w-6 text-rose-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-red-500 bg-opacity-10 flex items-center justify-center mb-4">
+              <Lock className="h-6 w-6 text-red-500" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Fullscreen Lockdown</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              Enforces fullscreen mode with instant re-entry and strike accumulation.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Fullscreen Lock</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Enforces fullscreen mode with instant detection and strike accumulation.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-rose-500" />Automatic fullscreen entry</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-rose-500" />Exit detection</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-rose-500" />Strike accumulation</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-red-500" />Automatic entry</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-red-500" />Exit detection</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-red-500" />Strike accumulation</li>
             </ul>
           </div>
 
           {/* Card 5 — Heartbeat Protocol */}
-          <div className="feature-card animate-fade-up stagger-5 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center mb-5 group-hover:bg-violet-500/20 transition-colors">
-              <Zap className="h-6 w-6 text-violet-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-purple-500 bg-opacity-10 flex items-center justify-center mb-4">
+              <Zap className="h-6 w-6 text-purple-500" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Heartbeat Protocol</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              Server-side client validation with 10-second pings and battery monitoring.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Heartbeat Protocol</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Server-side validation with 10-second pings and battery monitoring.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-violet-500" />10-second ping interval</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-violet-500" />Connection tracking</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-violet-500" />Battery level monitoring</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-purple-500" />10-second interval</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-purple-500" />Connection tracking</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-purple-500" />Battery monitoring</li>
             </ul>
           </div>
 
           {/* Card 6 — Live Monitoring */}
-          <div className="feature-card animate-fade-up stagger-6 group rounded-2xl bg-white/[0.02] p-7 backdrop-blur-sm">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-5 group-hover:bg-emerald-500/20 transition-colors">
-              <BarChart3 className="h-6 w-6 text-emerald-400" />
+          <div className="border border-[#E2E8F0] rounded-lg bg-white p-6 hover:shadow-sm transition-shadow">
+            <div className="w-12 h-12 rounded-lg bg-[#10B981] bg-opacity-10 flex items-center justify-center mb-4">
+              <BarChart3 className="h-6 w-6 text-[#10B981]" strokeWidth={1.5} />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Live Monitoring</h3>
-            <p className="text-white/40 text-sm leading-relaxed mb-4">
-              Real-time dashboard showing every student&apos;s focus state and security events.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Live Monitoring</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Real-time dashboard showing every student's status and security events.
             </p>
-            <ul className="space-y-1.5 text-sm text-white/30">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Status indicators</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Security incident alerts</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-emerald-500" />Force submit capability</li>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Status indicators</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Incident alerts</li>
+              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-[#10B981]" />Force submit</li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 py-28">
-        <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mb-28" />
+      {/* Divider */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="h-px bg-[#E2E8F0]" />
+      </div>
 
-        <h2 className="animate-fade-up font-[family-name:var(--font-instrument)] text-4xl sm:text-5xl tracking-tight text-center mb-20">
-          Three steps to a
-          <span className="text-emerald-400"> secure exam</span>
+      {/* ── How It Works ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] text-center mb-12 sm:mb-16 md:mb-20">
+          Three Steps to
+          <span className="text-[#10B981]"> Secure Assessment</span>
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+        <div className="grid sm:grid-cols-3 gap-8 sm:gap-6 md:gap-8 max-w-4xl mx-auto">
           {/* Step 1 */}
-          <div className="animate-fade-up stagger-1 text-center group">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6 group-hover:border-emerald-500/40 transition-colors">
-              <span className="font-[family-name:var(--font-instrument)] text-4xl text-emerald-400">1</span>
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-[#10B981] bg-opacity-10 flex items-center justify-center mx-auto mb-6 border border-[#10B981] border-opacity-20">
+              <span className="text-2xl font-bold text-[#10B981]">1</span>
             </div>
-            <h3 className="text-lg font-semibold mb-3">Create &amp; Configure</h3>
-            <p className="text-white/40 text-sm leading-relaxed">
-              Set up questions, upload your class roster, and configure security preferences.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Create &amp; Configure</h3>
+            <p className="text-slate-600 text-sm">
+              Set up questions, upload your roster, and configure security settings.
             </p>
           </div>
 
           {/* Step 2 */}
-          <div className="animate-fade-up stagger-2 text-center group">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/10 to-white/[0.02] border border-white/10 flex items-center justify-center mx-auto mb-6 group-hover:border-white/20 transition-colors">
-              <span className="font-[family-name:var(--font-instrument)] text-4xl text-white/80">2</span>
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-[#F59E0B] bg-opacity-10 flex items-center justify-center mx-auto mb-6 border border-[#F59E0B] border-opacity-20">
+              <span className="text-2xl font-bold text-[#F59E0B]">2</span>
             </div>
-            <h3 className="text-lg font-semibold mb-3">Students Join</h3>
-            <p className="text-white/40 text-sm leading-relaxed">
-              Students enter with a quiz code and validated index number. Lockdown activates automatically.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Students Access</h3>
+            <p className="text-slate-600 text-sm">
+              Students enter with assessment code and identification. Lockdown activates automatically.
             </p>
           </div>
 
           {/* Step 3 */}
-          <div className="animate-fade-up stagger-3 text-center group">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-500/20 to-teal-500/5 border border-teal-500/20 flex items-center justify-center mx-auto mb-6 group-hover:border-teal-500/40 transition-colors">
-              <span className="font-[family-name:var(--font-instrument)] text-4xl text-teal-400">3</span>
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-[#0F172A] bg-opacity-10 flex items-center justify-center mx-auto mb-6 border border-[#0F172A] border-opacity-20">
+              <span className="text-2xl font-bold text-[#0F172A]">3</span>
             </div>
-            <h3 className="text-lg font-semibold mb-3">Monitor &amp; Analyze</h3>
-            <p className="text-white/40 text-sm leading-relaxed">
-              Track progress live. Review detailed analytics. Export results and integrity reports.
+            <h3 className="text-lg font-bold text-[#0F172A] mb-2">Monitor &amp; Analyze</h3>
+            <p className="text-slate-600 text-sm">
+              Track in real-time. Review analytics. Export results and integrity reports.
             </p>
           </div>
         </div>
       </section>
 
+      {/* Divider */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="h-px bg-[#E2E8F0]" />
+      </div>
+
       {/* ── CTA Banner ── */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pb-28">
-        <div className="animate-glow rounded-3xl bg-gradient-to-br from-emerald-500/[0.08] to-teal-500/[0.04] border border-emerald-500/20 p-12 sm:p-16 text-center backdrop-blur-xl">
-          <h2 className="font-[family-name:var(--font-instrument)] text-4xl sm:text-5xl tracking-tight mb-5">
-            Ready to secure your exams?
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-24">
+        <div className="p-8 sm:p-12 md:p-16 text-center border border-[#E2E8F0] rounded-xl bg-gradient-to-b from-[#F8FAFC] to-white">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0F172A] mb-3 sm:mb-4">
+            Ready to Secure Your Assessments?
           </h2>
-          <p className="text-white/40 text-lg mb-10 max-w-md mx-auto">
-            Start running tamper-proof assessments in minutes. No installation required.
+          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto mb-8 sm:mb-10">
+            Start running tamper-proof assessments in minutes. No installation required. Institutional-grade security built in.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/login">
-              <Button size="lg" className="bg-emerald-500 hover:bg-emerald-400 text-[#07070e] font-semibold h-14 px-10 text-base shadow-2xl shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center">
+            <Link href="/login" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1F2937] text-white gap-2 h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base">
                 Get Started
-                <ChevronRight className="h-5 w-5 ml-1" />
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.5} />
               </Button>
             </Link>
-            <Link href="/exam">
-              <Button size="lg" variant="outline" className="border-white/[0.12] bg-white/[0.03] hover:bg-white/[0.06] text-white font-semibold h-14 px-10 text-base transition-all">
+            <Link href="/exam" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-[#E2E8F0] text-[#0F172A] h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base">
                 Try as Student
               </Button>
             </Link>
@@ -287,17 +284,17 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-10 border-t border-white/[0.06] py-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-white/30 text-sm">
-            <Shield className="h-4 w-4" />
-            <span><span className="text-white/50">Nimde</span><span className="text-orange-400/50">Quizzer</span></span>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <p className="text-white/20 text-sm">
-              © {new Date().getFullYear()} Built for institutions that take integrity seriously.
+      <footer className="border-t border-[#E2E8F0] bg-white py-8 sm:py-12 mt-12 sm:mt-16 md:mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-[#10B981]" strokeWidth={1.5} />
+            <span className="font-bold text-[#0F172A]">NimdeQuizzer</span>
+          </Link>
+          <div className="flex flex-col items-center sm:items-end gap-1">
+            <p className="text-slate-600 text-xs sm:text-sm text-center sm:text-right">
+              © {new Date().getFullYear()} NimdeQuizzer. Institutional-Grade Assessment Platform.
             </p>
-            <p className="text-white/15 text-xs tracking-wide">Powered by <span className="text-orange-400/40">Nimde AI</span>™</p>
+            <p className="text-slate-500 text-xs">Built for academic integrity.</p>
           </div>
         </div>
       </footer>

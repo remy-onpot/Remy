@@ -143,64 +143,74 @@ export default function ExamEntryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-[#E2E8F0] shadow-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-primary" />
+            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+              <Shield className="h-8 w-8 text-[#0F172A]" strokeWidth={1.5} />
+            </div>
           </div>
-          <CardTitle className="text-2xl">Enter Exam Room</CardTitle>
-          <CardDescription>
-            Enter your quiz code and index number to start
+          <CardTitle className="text-2xl text-[#0F172A]">Commence Examination</CardTitle>
+          <CardDescription className="text-slate-600">
+            Enter your assessment code and identification number
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert className="mb-4 border-red-300 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" strokeWidth={1.5} />
+              <AlertDescription className="text-red-800 ml-2">{error}</AlertDescription>
             </Alert>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Quiz Code</Label>
+              <Label htmlFor="code" className="text-[#0F172A] font-semibold">Assessment Code</Label>
               <Input
                 id="code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 placeholder="e.g., MID-ABCD"
                 required
+                className="border-[#E2E8F0] focus:border-[#10B981]"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="index">Index Number</Label>
+              <Label htmlFor="index" className="text-[#0F172A] font-semibold">Roll Number</Label>
               <Input
                 id="index"
                 value={indexNumber}
                 onChange={(e) => setIndexNumber(e.target.value)}
                 placeholder="e.g., 20240001"
                 required
+                className="border-[#E2E8F0] focus:border-[#10B981]"
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-[#10B981] hover:bg-[#059669] text-white gap-2" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Entering...
+                  <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
+                  Initializing...
                 </>
               ) : (
-                'Enter Exam'
+                <>
+                  Commence Examination
+                </>
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm">
-            <Link href="/" className="text-muted-foreground hover:text-primary flex items-center justify-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back to home
+            <Link href="/" className="text-slate-600 hover:text-[#0F172A] flex items-center justify-center gap-2 font-medium">
+              <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+              Back to Home
             </Link>
           </div>
         </CardContent>

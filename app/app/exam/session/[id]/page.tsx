@@ -28,7 +28,11 @@ import {
   SkipForward,
   Eye,
   Circle,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  AlertCircle
 } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { useSecurityMonitor } from '@/hooks/useSecurityMonitor'
@@ -414,8 +418,8 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#0F172A]" strokeWidth={1.5} />
       </div>
     )
   }
@@ -424,88 +428,76 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
   const progress = ((currentQuestion + 1) / questions.length) * 100
 
   return (
-    <div className="exam-fullscreen">
-      {/* Offline Banner */}
+    <div className="exam-fullscreen bg-[#F8FAFC]">
+      {/* Offline Banner - Per style guide */}
       {isOffline && (
-        <div className="offline-banner flex items-center justify-center gap-2">
-          <WifiOff className="h-4 w-4" />
-          Offline Mode - Your answers are being saved locally
+        <div className="offline-banner flex items-center justify-center gap-2 bg-[#F59E0B] text-white">
+          <WifiOff className="h-4 w-4" strokeWidth={1.5} />
+          <span className="font-semibold">Connection Interrupted - Saving Locally</span>
         </div>
       )}
 
       {/* Security Warning */}
       {showSecurityWarning && (
         <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50">
-          <Alert variant="destructive" className="shadow-lg">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{securityMessage}</AlertDescription>
+          <Alert variant="destructive" className="shadow-lg bg-red-50 border-red-300 text-red-800">
+            <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+            <AlertDescription className="text-red-700">{securityMessage}</AlertDescription>
           </Alert>
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      {/* Header - Minimal per style guide: Timer, Progress, Navigation ONLY */}
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Shield className="h-6 w-6 text-primary" />
-            <h1 className="font-semibold">{session?.quiz?.title}</h1>
+            <Shield className="h-6 w-6 text-[#0F172A]" strokeWidth={1.5} />
+            <h1 className="font-semibold text-[#0F172A] text-lg">{session?.quiz?.title}</h1>
           </div>
-          <div className="flex items-center gap-6">
-            {/* Timer */}
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <span className={`exam-timer font-mono text-lg font-bold ${
-                timeRemaining < 300 ? 'text-red-500 animate-pulse' : ''
+          <div className="flex items-center gap-8">
+            {/* Timer - Monospace per style guide */}
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-slate-600" strokeWidth={1.5} />
+              <span className={`exam-timer font-mono text-base font-bold tracking-wide ${
+                timeRemaining < 300 ? 'text-[#F59E0B] animate-pulse' : 'text-[#0F172A]'
               }`}>
                 {formatTimeRemaining(timeRemaining)}
               </span>
             </div>
-            {/* Security Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Strikes:</span>
-              <div className="flex gap-1">
+            {/* Integrity Indicators */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-slate-600 uppercase">Integrity Status</span>
+              <div className="flex gap-2">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className={`w-3 h-3 rounded-full ${
-                      i <= securityState.strikes ? 'bg-red-500' : 'bg-gray-200'
+                    className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                      i <= securityState.strikes ? 'bg-red-500' : 'bg-slate-300'
                     }`}
                   />
                 ))}
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => router.push(`/exam/session/${sessionId}/review`)}
-              className="gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              Review
-            </Button>
-            <Button variant="outline" size="sm" onClick={enterFullscreen}>
-              <Maximize2 className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Progress */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-muted-foreground mb-2">
+        <div className="mb-8">
+          <div className="flex justify-between text-sm font-medium text-slate-600 mb-2">
             <span>Question {currentQuestion + 1} of {questions.length}</span>
-            <span>{Math.round(progress)}% Complete</span>
+            <span>{Math.round(progress)}% Progress</span>
           </div>
-          <Progress value={progress} />
+          <Progress value={progress} className="h-2 bg-slate-200" />
         </div>
 
         {/* Question */}
         {currentQ && (
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold mb-4">
+          <Card className="mb-8 border-[#E2E8F0] shadow-sm">
+            <CardContent className="p-8">
+              <h2 className="text-xl font-bold text-[#0F172A] mb-6">
                 {currentQ.content}
               </h2>
 
@@ -516,9 +508,9 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
                   className="space-y-3"
                 >
                   {currentQ.options.map((option) => (
-                    <div key={option.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-slate-50">
+                    <div key={option.id} className="flex items-center space-x-3 p-4 border border-[#E2E8F0] rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer">
                       <RadioGroupItem value={option.id} id={option.id} />
-                      <Label htmlFor={option.id} className="flex-1 cursor-pointer">
+                      <Label htmlFor={option.id} className="flex-1 cursor-pointer text-slate-700">
                         {option.content}
                       </Label>
                     </div>
@@ -530,8 +522,9 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
                 <Textarea
                   value={answers[currentQ.id] || ''}
                   onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
-                  placeholder="Enter your answer here..."
+                  placeholder="Provide your response here..."
                   rows={6}
+                  className="border-[#E2E8F0] focus:border-[#10B981]"
                 />
               )}
 
@@ -541,13 +534,13 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
                   onValueChange={(value) => handleAnswerChange(currentQ.id, value)}
                   className="space-y-3"
                 >
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-slate-50">
+                  <div className="flex items-center space-x-3 p-4 border border-[#E2E8F0] rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer">
                     <RadioGroupItem value="true" id="true" />
-                    <Label htmlFor="true" className="flex-1 cursor-pointer">True</Label>
+                    <Label htmlFor="true" className="flex-1 cursor-pointer text-slate-700">True</Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-slate-50">
+                  <div className="flex items-center space-x-3 p-4 border border-[#E2E8F0] rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer">
                     <RadioGroupItem value="false" id="false" />
-                    <Label htmlFor="false" className="flex-1 cursor-pointer">False</Label>
+                    <Label htmlFor="false" className="flex-1 cursor-pointer text-slate-700">False</Label>
                   </div>
                 </RadioGroup>
               )}
@@ -561,7 +554,9 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
             variant="outline"
             onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
             disabled={currentQuestion === 0}
+            className="border-[#E2E8F0] text-[#0F172A] gap-2"
           >
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
             Previous
           </Button>
 
@@ -569,42 +564,45 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
             <Button
               variant="outline"
               onClick={handleSkipQuestion}
-              className="gap-2"
+              className="border-[#E2E8F0] text-[#0F172A] gap-2"
             >
-              <SkipForward className="h-4 w-4" />
+              <SkipForward className="h-4 w-4" strokeWidth={1.5} />
               Skip
             </Button>
             
             {currentQuestion < questions.length - 1 ? (
               <Button
                 onClick={() => setCurrentQuestion((prev) => Math.min(questions.length - 1, prev + 1))}
+                className="bg-[#10B981] hover:bg-[#059669] text-white gap-2"
               >
                 Next
+                <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
               </Button>
             ) : (
-              <Button onClick={() => setShowSubmitDialog(true)} variant="default">
-                Submit Exam
+              <Button onClick={() => setShowSubmitDialog(true)} className="bg-[#10B981] hover:bg-[#059669] text-white gap-2">
+                Submit Assessment
+                <Send className="h-4 w-4" strokeWidth={1.5} />
               </Button>
             )}
           </div>
         </div>
 
         {/* Question Navigator */}
-        <div className="mt-8 pt-8 border-t">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-muted-foreground">Jump to question:</p>
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-green-500" />
-                Answered
+        <div className="mt-8 pt-8 border-t border-[#E2E8F0]">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-[#0F172A]">Question Navigation:</p>
+            <div className="flex gap-6 text-xs font-medium text-slate-600">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={1.5} />
+                <span>Answered</span>
               </div>
-              <div className="flex items-center gap-1">
-                <SkipForward className="h-3 w-3 text-amber-500" />
-                Skipped
+              <div className="flex items-center gap-2">
+                <SkipForward className="h-4 w-4 text-[#F59E0B]" strokeWidth={1.5} />
+                <span>Skipped</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Circle className="h-3 w-3" />
-                Unanswered
+              <div className="flex items-center gap-2">
+                <Circle className="h-4 w-4 text-slate-300" strokeWidth={1.5} />
+                <span>Unanswered</span>
               </div>
             </div>
           </div>
@@ -617,17 +615,23 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
               return (
                 <Button
                   key={q.id}
-                  variant={isCurrent ? 'default' : isAnswered ? 'secondary' : 'outline'}
+                  variant={isCurrent ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setCurrentQuestion(i)}
-                  className={`w-10 h-10 p-0 ${
-                    isSkipped && !isAnswered ? 'border-amber-500 bg-amber-50 hover:bg-amber-100' : ''
+                  className={`w-10 h-10 p-0 font-semibold ${
+                    isCurrent 
+                      ? 'bg-[#0F172A] text-white border-[#0F172A]' 
+                      : isAnswered 
+                      ? 'border-[#10B981] bg-emerald-50 text-[#0F172A]' 
+                      : isSkipped 
+                      ? 'border-[#F59E0B] bg-amber-50 text-[#0F172A]' 
+                      : 'border-[#E2E8F0] text-[#0F172A]'
                   }`}
                 >
                   {isAnswered ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={1.5} />
                   ) : isSkipped ? (
-                    <SkipForward className="h-4 w-4 text-amber-500" />
+                    <SkipForward className="h-4 w-4 text-[#F59E0B]" strokeWidth={1.5} />
                   ) : (
                     i + 1
                   )}
@@ -640,78 +644,86 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
       {/* Submit Dialog */}
       <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <DialogContent>
+        <DialogContent className="border-[#E2E8F0]">
           <DialogHeader>
-            <DialogTitle>⚠️ Final Submission Confirmation</DialogTitle>
-            <DialogDescription className="space-y-3 pt-2" asChild>
-              <div className="text-sm text-muted-foreground space-y-3 pt-2">
-              <p>You are about to submit your exam. This action <strong>CANNOT be undone</strong>.</p>
-              
-              <div className="bg-slate-50 p-4 rounded-lg space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    Answered:
-                  </span>
-                  <strong>{Object.keys(answers).length} questions</strong>
+            <DialogTitle className="text-[#0F172A] flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-[#F59E0B]" strokeWidth={1.5} />
+              Final Submission Confirmation
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-4" asChild>
+              <div className="text-sm text-slate-600 space-y-3">
+                <p>You are about to submit your assessment. This action <span className="font-semibold text-[#0F172A]">cannot be undone</span>.</p>
+                
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-lg space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-[#0F172A]">
+                      <CheckCircle2 className="h-4 w-4 text-[#10B981]" strokeWidth={1.5} />
+                      <span className="font-medium">Answered:</span>
+                    </span>
+                    <strong className="text-[#0F172A]">{Object.keys(answers).length} questions</strong>
+                  </div>
+                  
+                  {skippedQuestions.size > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-[#0F172A]">
+                        <SkipForward className="h-4 w-4 text-[#F59E0B]" strokeWidth={1.5} />
+                        <span className="font-medium">Skipped:</span>
+                      </span>
+                      <strong className="text-[#F59E0B]">
+                        {skippedQuestions.size} questions
+                        {skippedQuestions.size > 0 && (
+                          <span className="text-xs ml-2 text-slate-600">
+                            (Q{Array.from(skippedQuestions).map(qId => questions.findIndex(q => q.id === qId) + 1).join(', Q')})
+                          </span>
+                        )}
+                      </strong>
+                    </div>
+                  )}
+                  
+                  {questions.length - Object.keys(answers).length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-[#0F172A]">
+                        <Circle className="h-4 w-4 text-slate-300" strokeWidth={1.5} />
+                        <span className="font-medium">Unanswered:</span>
+                      </span>
+                      <strong className="text-red-600">
+                        {questions.length - Object.keys(answers).length} questions
+                      </strong>
+                    </div>
+                  )}
                 </div>
                 
-                {skippedQuestions.size > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <SkipForward className="h-4 w-4 text-amber-500" />
-                      Skipped:
-                    </span>
-                    <strong className="text-amber-600">
-                      {skippedQuestions.size} questions
-                      {skippedQuestions.size > 0 && (
-                        <span className="text-xs ml-2">
-                          (Q{Array.from(skippedQuestions).map(qId => questions.findIndex(q => q.id === qId) + 1).join(', Q')})
-                        </span>
-                      )}
-                    </strong>
-                  </div>
+                {(skippedQuestions.size > 0 || questions.length - Object.keys(answers).length > 0) && (
+                  <p className="text-[#F59E0B] font-medium flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" strokeWidth={1.5} />
+                    Skipped and unanswered questions will receive zero points.
+                  </p>
                 )}
                 
-                {questions.length - Object.keys(answers).length > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                      Unanswered:
-                    </span>
-                    <strong className="text-red-600">
-                      {questions.length - Object.keys(answers).length} questions
-                    </strong>
-                  </div>
-                )}
-              </div>
-              
-              {(skippedQuestions.size > 0 || questions.length - Object.keys(answers).length > 0) && (
-                <p className="text-amber-600 font-medium">
-                  ⚠️ Skipped and unanswered questions will receive 0 points.
+                <p className="text-slate-600 font-medium pt-2">
+                  Are you ready to submit your assessment?
                 </p>
-              )}
-              
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to submit now?
-              </p>
               </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button 
-              variant="outline" 
+              variant="outline"
               onClick={() => {
                 setShowSubmitDialog(false)
                 router.push(`/exam/session/${sessionId}/review`)
               }}
-              className="gap-2"
+              className="border-[#E2E8F0] text-[#0F172A] gap-2"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4" strokeWidth={1.5} />
               Review Answers
             </Button>
             <div className="flex gap-2 flex-1 justify-end">
-              <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowSubmitDialog(false)}
+                className="border-[#E2E8F0] text-[#0F172A]"
+              >
                 Cancel
               </Button>
               <Button
@@ -726,15 +738,18 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
                   submitExam()
                 }}
                 disabled={submitting}
-                variant="destructive"
+                className="bg-[#10B981] hover:bg-[#059669] text-white gap-2"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} />
                     Submitting...
                   </>
                 ) : (
-                  'Yes, Submit Exam'
+                  <>
+                    Submit Assessment
+                    <Send className="h-4 w-4" strokeWidth={1.5} />
+                  </>
                 )}
               </Button>
             </div>
@@ -744,22 +759,28 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
 
       {/* Proof String Dialog */}
       <Dialog open={showProofDialog} onOpenChange={setShowProofDialog}>
-        <DialogContent>
+        <DialogContent className="border-[#E2E8F0]">
           <DialogHeader>
-            <DialogTitle>Exam Submitted Offline</DialogTitle>
-            <DialogDescription>
-              Your exam was submitted while offline. Please save this proof string:
+            <DialogTitle className="text-[#0F172A] flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-[#10B981]" strokeWidth={1.5} />
+              Assessment Submitted Offline
+            </DialogTitle>
+            <DialogDescription className="text-slate-600 pt-2">
+              Your assessment was submitted while offline. Please save this proof code:
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-slate-100 p-4 rounded-lg font-mono text-xs break-all">
+          <div className="bg-[#0F172A] p-4 rounded-lg font-mono text-xs break-all text-[#F8FAFC] border border-[#E2E8F0]">
             {proofString}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Screenshot this code as proof of your submission.
+          <p className="text-sm text-slate-600">
+            Screenshot or save this code as proof of your submission completion.
           </p>
           <DialogFooter>
-            <Button onClick={() => router.push('/exam/completed')}>
-              Continue
+            <Button 
+              onClick={() => router.push('/exam/completed')}
+              className="bg-[#10B981] hover:bg-[#059669] text-white w-full"
+            >
+              Continue to Dashboard
             </Button>
           </DialogFooter>
         </DialogContent>

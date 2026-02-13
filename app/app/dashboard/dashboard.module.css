@@ -1,0 +1,140 @@
+/* ===================================
+   HEADER ANIMATIONS
+   =================================== */
+
+.headerSlide {
+  animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logoFade {
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===================================
+   PAGE TRANSITIONS
+   =================================== */
+
+.titleFade {
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.contentFade {
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================
+   STATS GRID ANIMATIONS
+   =================================== */
+
+.statsStagger .statCard {
+  animation: scaleUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.statCard:nth-child(1) {
+  animation-delay: 0.15s;
+}
+
+.statCard:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.statCard:nth-child(3) {
+  animation-delay: 0.35s;
+}
+
+.statCard:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===================================
+   QUIZ TABLE ANIMATIONS
+   =================================== */
+
+.quizTable {
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+}
+
+.quizRow {
+  animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ===================================
+   EMPTY STATE
+   =================================== */
+
+.emptyIcon {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* ===================================
+   LOADER
+   =================================== */
+
+.loaderContainer {
+  animation: fadeIn 0.5s ease forwards;
+}
+

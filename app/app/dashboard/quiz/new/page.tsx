@@ -11,18 +11,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowLeft, Loader2, Plus, Trash2, Check } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Trash2, Check, BookOpen, FileText } from 'lucide-react'
 import { supabaseClient } from '@/lib/supabase'
 import { generateQuizCode } from '@/lib/utils'
-import { Question, QuestionType } from '@/types'
+import { QuestionType } from '@/types'
 import { QuizImportModal } from '@/components/quiz/QuizImportModal'
-import type { ExtractedQuiz } from '@/lib/services/ai-quiz'
 
+// Updated local type to match your new DB schema
 type FormOption = { content: string; is_correct: boolean }
 type FormQuestion = {
-  type?: QuestionType
-  content?: string
-  points?: number
+  type: QuestionType  // Required, always set when creating questions
+  content: string
+  points: number
+  context?: string | null // For Comprehension passages
+  sample_answer?: string | null // For Theory grading keys
   options?: FormOption[]
 }
 
@@ -32,33 +34,44 @@ export default function NewQuizPage() {
   const [duration, setDuration] = useState(60)
   const [strictness, setStrictness] = useState<'low' | 'medium' | 'high'>('medium')
   const [shuffle, setShuffle] = useState(true)
+  
+  // Default state with one empty MCQ
   const [questions, setQuestions] = useState<FormQuestion[]>([
     { type: 'mcq', content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
   ])
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Handle AI-extracted questions
-  const handleQuestionsExtracted = (data: ExtractedQuiz) => {
-    if (data.title && !title) {
-      setTitle(data.title)
+  // --- Handlers ---
+
+  const handleAiImport = (data: any) => {
+    if (data.title && !title) setTitle(data.title)
+    
+    if (data.questions && Array.isArray(data.questions)) {
+      const newQuestions = data.questions.map((q: any) => ({
+          type: q.type || 'mcq',
+          content: q.content,
+          points: q.points || 1,
+          context: q.context || null,
+          sample_answer: q.sample_answer || null,
+          // Only map options if they exist, otherwise default to empty for MCQs
+          options: q.options || (q.type === 'mcq' ? [{ content: '', is_correct: false }, { content: '', is_correct: false }] : [])
+      }))
+      
+      // If the form was practically empty, replace it. Otherwise append.
+      if (questions.length === 1 && !questions[0].content) {
+        setQuestions(newQuestions)
+      } else {
+        setQuestions([...questions, ...newQuestions])
+      }
     }
-
-    const extractedQuestions: FormQuestion[] = data.questions.map(q => ({
-      type: q.type,
-      content: q.content,
-      points: q.points,
-      options: q.options || []
-    }))
-
-    setQuestions(extractedQuestions)
-    setError('') // Clear any previous errors
   }
 
   const addQuestion = () => {
     setQuestions([
       ...questions,
-      { type: 'mcq' as QuestionType, content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
+      { type: 'mcq', content: '', points: 1, options: [{ content: '', is_correct: false }, { content: '', is_correct: false }] }
     ])
   }
 
@@ -76,7 +89,7 @@ export default function NewQuizPage() {
     const updated = [...questions]
     updated[questionIndex].options = [
       ...(updated[questionIndex].options || []),
-      { content: '', is_correct: false } as FormOption
+      { content: '', is_correct: false }
     ]
     setQuestions(updated)
   }
@@ -104,66 +117,32 @@ export default function NewQuizPage() {
     setError('')
 
     try {
-      // Comprehensive validation
-      if (!title.trim()) {
-        setError('Please enter a quiz title')
-        return
-      }
+      // 1. Basic Validation
+      if (!title.trim()) throw new Error('Please enter a quiz title')
+      if (questions.length === 0) throw new Error('Please add at least one question')
       
-      if (title.trim().length < 3) {
-        setError('Quiz title must be at least 3 characters')
-        return
-      }
-      
-      if (questions.length === 0) {
-        setError('Please add at least one question')
-        return
-      }
-      
-      // Validate each question
+      // 2. Question Validation
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
+        if (!q.content?.trim()) throw new Error(`Question ${i + 1}: Content is required`)
         
-        if (!q.content?.trim()) {
-          setError(`Question ${i + 1}: Content is required`)
-          return
-        }
-        
-        if (q.content.trim().length < 5) {
-          setError(`Question ${i + 1}: Content must be at least 5 characters`)
-          return
-        }
-        
-        if (q.type === 'mcq') {
+        // Validation specific to MCQ/Boolean
+        if (q.type === 'mcq' || q.type === 'boolean') {
           if (!q.options || q.options.length < 2) {
-            setError(`Question ${i + 1}: MCQ questions must have at least 2 options`)
-            return
+             throw new Error(`Question ${i + 1}: Must have at least 2 options`)
           }
-          
-          // Check if all options have content
-          const emptyOption = q.options.findIndex(opt => !opt.content?.trim())
-          if (emptyOption !== -1) {
-            setError(`Question ${i + 1}, Option ${emptyOption + 1}: Content is required`)
-            return
-          }
-          
-          // Check if at least one option is marked correct
-          const hasCorrectAnswer = q.options.some(opt => opt.is_correct)
-          if (!hasCorrectAnswer) {
-            setError(`Question ${i + 1}: You must mark at least one option as correct`)
-            return
+          const hasCorrect = q.options.some(opt => opt.is_correct)
+          if (!hasCorrect) {
+             throw new Error(`Question ${i + 1}: Mark at least one option as correct`)
           }
         }
       }
 
-      // Get current user
+      // 3. Auth Check
       const { data: { user } } = await supabaseClient.auth.getUser()
-      if (!user) {
-        setError('You must be logged in')
-        return
-      }
+      if (!user) throw new Error('You must be logged in')
 
-      // Create quiz
+      // 4. Create Quiz
       const code = generateQuizCode()
       const { data: quiz, error: quizError } = await supabaseClient
         .from('quizzes')
@@ -184,95 +163,92 @@ export default function NewQuizPage() {
         .single()
 
       if (quizError) throw quizError
-
-      // Type assertion and validate quiz exists
       if (!quiz) throw new Error('Failed to create quiz')
-      const typedQuiz = quiz as any
 
-      // Batch insert all questions at once
-      const questionInserts = questions.map((q, i) => ({
-        quiz_id: typedQuiz.id,
-        type: q.type,
-        content: q.content,
-        points: q.points || 1,
-        position: i
-      }))
-
-      const { data: insertedQuestions, error: questionsError } = await (supabaseClient
-        .from('questions')
-        .insert(questionInserts) as any)
-        .select()
-
-      if (questionsError) throw questionsError
-      if (!insertedQuestions || insertedQuestions.length === 0) throw new Error('Failed to create questions')
-
-      // Batch insert all options at once
-      const optionInserts: { question_id: string; content: string; is_correct: boolean }[] = []
+      // 5. Create Questions
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i]
-        if (q.type === 'mcq' && q.options) {
-          for (const opt of q.options) {
-            optionInserts.push({
-              question_id: insertedQuestions[i].id,
-              content: opt.content,
-              is_correct: opt.is_correct
-            })
-          }
+        
+       const { data: question, error: questionError } = await supabaseClient
+  .from('questions')
+  .insert({
+    quiz_id: quiz.id,
+    type: q.type,
+    content: q.content!,
+    points: q.points || 1,
+    position: i,
+    context: q.context || null,
+    sample_answer: q.sample_answer || null
+  })
+  .select()
+  .single()
+
+        if (questionError) throw questionError
+
+        // 6. Create Options (Only for MCQ/Boolean)
+        if ((q.type === 'mcq' || q.type === 'boolean') && q.options) {
+          const optionsToInsert = q.options.map(opt => ({
+            question_id: question.id,
+            content: opt.content,
+            is_correct: opt.is_correct
+          }))
+          
+          const { error: optionError } = await supabaseClient
+            .from('options')
+            .insert(optionsToInsert)
+
+          if (optionError) throw optionError
         }
-      }
-
-      if (optionInserts.length > 0) {
-        const { error: optionsError } = await supabaseClient
-          .from('options')
-          .insert(optionInserts)
-
-        if (optionsError) throw optionsError
       }
 
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Quiz creation error:', err)
-      setError(err.message || 'Failed to create quiz. Please try again.')
+      setError(err.message || 'Failed to create quiz')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center">
-          <Link href="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 h-16 flex items-center">
+          <Link href="/dashboard" className="flex items-center gap-2 text-slate-600 hover:text-[#0F172A]">
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
             Back to Dashboard
           </Link>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">Create New Quiz</h1>
+      <main className="container mx-auto px-6 py-8 max-w-4xl">
+        <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-[#0F172A]">Create Assessment</h1>
+            <QuizImportModal onQuestionsExtracted={handleAiImport} />
+        </div>
 
         {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert className="mb-6 border-red-300 bg-red-50">
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
           </Alert>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Quiz Settings */}
-          <Card>
+          {/* Assessment Settings */}
+          <Card className="border-[#E2E8F0]">
             <CardHeader>
-              <CardTitle>Quiz Settings</CardTitle>
-              <CardDescription>Configure the basic settings for your quiz</CardDescription>
+              <CardTitle className="text-[#0F172A]">Assessment Settings</CardTitle>
+              <CardDescription className="text-slate-600">Configure duration, security level, and question options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Quiz Title</Label>
+                <Label htmlFor="title" className="text-[#0F172A] font-semibold">Assessment Title</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g., Midterm Examination - Marketing 101"
+                  placeholder="e.g., CS 301 Midterm - Data Structures"
+                  className="border-[#E2E8F0] focus:border-[#10B981]"
                   required
                 />
               </div>
@@ -284,7 +260,6 @@ export default function NewQuizPage() {
                     id="duration"
                     type="number"
                     min={5}
-                    max={180}
                     value={duration}
                     onChange={(e) => setDuration(parseInt(e.target.value))}
                     required
@@ -294,9 +269,7 @@ export default function NewQuizPage() {
                 <div className="space-y-2">
                   <Label htmlFor="strictness">Security Level</Label>
                   <Select value={strictness} onValueChange={(v: any) => setStrictness(v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">Low (Lenient)</SelectItem>
                       <SelectItem value="medium">Medium (Balanced)</SelectItem>
@@ -305,57 +278,71 @@ export default function NewQuizPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 pt-8">
                   <Label className="flex items-center gap-2">
                     <Switch checked={shuffle} onCheckedChange={setShuffle} />
                     Shuffle Questions
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Randomize question order for each student
-                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Questions */}
+          {/* Questions List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Questions</h2>
-              <div className="flex gap-2">
-                <QuizImportModal onQuestionsExtracted={handleQuestionsExtracted} />
-                <Button type="button" variant="outline" onClick={addQuestion} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Question
-                </Button>
-              </div>
+              <Button type="button" variant="outline" onClick={addQuestion} className="gap-2">
+                <Plus className="h-4 w-4" /> Add Question
+              </Button>
             </div>
 
             {questions.map((question, qIndex) => (
-              <Card key={qIndex}>
+              <Card key={qIndex} className={question.context ? "border-l-4 border-l-indigo-500" : ""}>
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Question {qIndex + 1}</CardTitle>
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">Question {qIndex + 1}</CardTitle>
+                        {question.context && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-medium">Linked to Passage</span>}
+                    </div>
                     {questions.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeQuestion(qIndex)}
-                      >
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeQuestion(qIndex)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  
+                  {/* COMPREHENSION: Reading Passage Editor */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label>Reading Passage / Context (Optional)</Label>
+                         {/* Toggle visibility of context field if you want to add it manually */}
+                         {!question.context && (
+                             <Button type="button" variant="ghost" size="sm" className="h-6 text-xs" onClick={() => updateQuestion(qIndex, 'context', ' ')}>
+                                <BookOpen className="h-3 w-3 mr-1" /> Add Passage
+                             </Button>
+                         )}
+                    </div>
+                    {question.context !== null && question.context !== undefined && (
+                        <Textarea 
+                            value={question.context}
+                            onChange={(e) => updateQuestion(qIndex, 'context', e.target.value)}
+                            placeholder="Paste the reading passage here..."
+                            className="bg-slate-50 border-indigo-200 min-h-[100px] text-sm"
+                        />
+                    )}
+                  </div>
+
+                  {/* Main Question Content */}
                   <div className="space-y-2">
                     <Label>Question Content</Label>
                     <Textarea
                       value={question.content}
                       onChange={(e) => updateQuestion(qIndex, 'content', e.target.value)}
-                      placeholder="Enter your question here..."
-                      rows={3}
+                      placeholder="Enter the question..."
+                      rows={2}
                       required
                     />
                   </div>
@@ -363,17 +350,14 @@ export default function NewQuizPage() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Question Type</Label>
-                      <Select
-                        value={question.type}
-                        onValueChange={(v: any) => updateQuestion(qIndex, 'type', v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
+                      <Select value={question.type} onValueChange={(v: any) => updateQuestion(qIndex, 'type', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="mcq">Multiple Choice</SelectItem>
-                          <SelectItem value="short_answer">Short Answer</SelectItem>
                           <SelectItem value="boolean">True/False</SelectItem>
+                          <SelectItem value="short_answer">Short Answer (One Word)</SelectItem>
+                          <SelectItem value="long_answer">Theory / Essay</SelectItem>
+                          <SelectItem value="comprehension">Comprehension</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -383,25 +367,38 @@ export default function NewQuizPage() {
                       <Input
                         type="number"
                         min={1}
-                        max={100}
                         value={question.points}
                         onChange={(e) => updateQuestion(qIndex, 'points', parseInt(e.target.value))}
                       />
                     </div>
                   </div>
 
-                  {question.type === 'mcq' && (
-                    <div className="space-y-2">
+                  {/* LOGIC BRANCHING: Options vs. Theory Answer */}
+                  
+                  {/* CASE A: Theory / Essay / Comprehension -> Show Sample Answer */}
+                  {(question.type === 'long_answer' || question.type === 'comprehension') && (
+                     <div className="space-y-2 pt-2">
+                        <Label className="flex items-center gap-2 text-green-700">
+                            <FileText className="h-4 w-4" />
+                            Sample Answer / Grading Key
+                        </Label>
+                        <Textarea 
+                            value={question.sample_answer || ''}
+                            onChange={(e) => updateQuestion(qIndex, 'sample_answer', e.target.value)}
+                            placeholder="Enter the correct answer or key points for grading..."
+                            className="bg-green-50/30 border-green-200 min-h-[80px]"
+                        />
+                        <p className="text-xs text-muted-foreground">Visible only to you (the lecturer) for grading purposes.</p>
+                     </div>
+                  )}
+
+                  {/* CASE B: MCQ / Boolean -> Show Options */}
+                  {(question.type === 'mcq' || question.type === 'boolean') && (
+                    <div className="space-y-2 border-t pt-4 mt-2">
                       <div className="flex items-center justify-between">
-                        <Label>Options</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addOption(qIndex)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add Option
+                        <Label>Answer Options</Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => addOption(qIndex)}>
+                          <Plus className="h-3 w-3 mr-1" /> Add Option
                         </Button>
                       </div>
                       <div className="space-y-2">
@@ -412,49 +409,40 @@ export default function NewQuizPage() {
                               variant={option.is_correct ? 'default' : 'outline'}
                               size="sm"
                               onClick={() => updateOption(qIndex, oIndex, 'is_correct', !option.is_correct)}
-                              className="shrink-0"
+                              className={`shrink-0 ${option.is_correct ? 'bg-green-600 hover:bg-green-700' : ''}`}
                             >
                               {option.is_correct && <Check className="h-3 w-3 mr-1" />}
-                              Correct
+                              {option.is_correct ? 'Correct' : 'Mark Correct'}
                             </Button>
                             <Input
                               value={option.content}
                               onChange={(e) => updateOption(qIndex, oIndex, 'content', e.target.value)}
                               placeholder={`Option ${oIndex + 1}`}
                             />
-                            {question.options!.length > 2 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeOption(qIndex, oIndex)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            )}
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeOption(qIndex, oIndex)}>
+                              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            </Button>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+
                 </CardContent>
               </Card>
             ))}
           </div>
 
           <div className="flex gap-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
+            <Button type="submit" className="flex-1 bg-[#10B981] hover:bg-[#059669] text-white" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Quiz...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" strokeWidth={1.5} /> Creating Assessment...
                 </>
-              ) : (
-                'Create Quiz'
-              )}
+              ) : 'Create Assessment'}
             </Button>
             <Link href="/dashboard">
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline" className="border-[#E2E8F0] text-[#0F172A]">Cancel</Button>
             </Link>
           </div>
         </form>

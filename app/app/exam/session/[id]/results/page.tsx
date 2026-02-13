@@ -191,24 +191,24 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#0F172A]" strokeWidth={1.5} />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md">
+      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
+        <Card className="max-w-md border-[#E2E8F0]">
           <CardHeader>
-            <CardTitle className="text-red-500">Error</CardTitle>
-            <CardDescription>{error}</CardDescription>
+            <CardTitle className="text-red-600">Error Loading Results</CardTitle>
+            <CardDescription className="text-slate-600">{error}</CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/">
-              <Button>
-                <Home className="h-4 w-4 mr-2" />
+              <Button className="bg-[#0F172A] hover:bg-[#1F2937] text-white gap-2">
+                <Home className="h-4 w-4" strokeWidth={1.5} />
                 Return Home
               </Button>
             </Link>
@@ -247,19 +247,23 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
   const showCorrectAnswers = quizSettings?.show_correct_answers !== false
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-[#F8FAFC]">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="font-semibold">Exam Results</h1>
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 shadow-sm">
+        <div className="container mx-auto px-6 h-16 flex items-center justify-between">
+          <h1 className="font-bold text-lg text-[#0F172A]">Assessment Results</h1>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDownloadPDF} className="gap-2">
-              <Download className="h-4 w-4" />
+            <Button 
+              onClick={handleDownloadPDF} 
+              variant="outline"
+              className="border-[#E2E8F0] text-[#0F172A] gap-2"
+            >
+              <Download className="h-4 w-4" strokeWidth={1.5} />
               Download PDF
             </Button>
             <Link href="/">
-              <Button variant="ghost" className="gap-2">
-                <Home className="h-4 w-4" />
+              <Button className="bg-[#0F172A] hover:bg-[#1F2937] text-white gap-2">
+                <Home className="h-4 w-4" strokeWidth={1.5} />
                 Home
               </Button>
             </Link>
@@ -268,58 +272,59 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-6 py-8 max-w-4xl">
         {/* Score Card */}
-        <Card className="mb-8 border-2">
+        <Card className="mb-8 border-2 border-[#E2E8F0] shadow-sm">
           <CardHeader className="text-center pb-4">
             <div className="flex justify-center mb-4">
               <div className={`w-32 h-32 rounded-full flex items-center justify-center ${
-                hasPassed === true ? 'bg-green-100' :
+                hasPassed === true ? 'bg-emerald-100' :
                 hasPassed === false ? 'bg-red-100' :
                 'bg-blue-100'
               }`}>
                 {hasPassed === true ? (
-                  <Trophy className="h-16 w-16 text-green-600" />
+                  <Trophy className="h-16 w-16 text-[#10B981]" strokeWidth={1.5} />
                 ) : hasPassed === false ? (
-                  <XCircle className="h-16 w-16 text-red-600" />
+                  <XCircle className="h-16 w-16 text-red-600" strokeWidth={1.5} />
                 ) : (
-                  <Trophy className="h-16 w-16 text-blue-600" />
+                  <Trophy className="h-16 w-16 text-blue-600" strokeWidth={1.5} />
                 )}
               </div>
             </div>
-            <CardTitle className="text-3xl">Your Score: {percentage}%</CardTitle>
-            <CardDescription className="text-lg">{earnedPoints} / {totalPoints} points</CardDescription>
+            <CardTitle className="text-4xl font-bold text-[#0F172A]">Score: {percentage}%</CardTitle>
+            <CardDescription className="text-xl text-slate-600">{earnedPoints} / {totalPoints} points</CardDescription>
             
             {hasPassed !== null && (
-              <Badge 
-                variant={hasPassed ? 'default' : 'destructive'}
-                className="mt-2"
-              >
-                {hasPassed ? '✓ Passed' : '✗ Failed'} (Passing: {passingScore}%)
-              </Badge>
+              <div className="mt-2 inline-flex mx-auto">
+                <div className={`px-4 py-2 rounded-lg font-semibold text-white ${
+                  hasPassed ? 'bg-[#10B981]' : 'bg-red-600'
+                }`}>
+                  {hasPassed ? '✓ Passed' : '✗ Did Not Pass'} (Passing: {passingScore}%)
+                </div>
+              </div>
             )}
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-green-700">{correctCount}</p>
-                <p className="text-sm text-green-600">Correct</p>
+              <div className="text-center p-4 bg-emerald-50 rounded-lg border border-[#E2E8F0]">
+                <CheckCircle2 className="h-8 w-8 text-[#10B981] mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-2xl font-bold text-[#0F172A]">{correctCount}</p>
+                <p className="text-sm text-slate-600">Correct</p>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
-                <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-red-700">{wrongCount}</p>
-                <p className="text-sm text-red-600">Wrong</p>
+              <div className="text-center p-4 bg-red-50 rounded-lg border border-[#E2E8F0]">
+                <XCircle className="h-8 w-8 text-red-600 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-2xl font-bold text-[#0F172A]">{wrongCount}</p>
+                <p className="text-sm text-slate-600">Incorrect</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <AlertTriangle className="h-8 w-8 text-gray-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-700">{unansweredCount}</p>
-                <p className="text-sm text-gray-600">Unanswered</p>
+              <div className="text-center p-4 bg-slate-50 rounded-lg border border-[#E2E8F0]">
+                <AlertTriangle className="h-8 w-8 text-slate-500 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-2xl font-bold text-[#0F172A]">{unansweredCount}</p>
+                <p className="text-sm text-slate-600">Unanswered</p>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <Clock className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-blue-700">{timeTaken ? formatTime(timeTaken) : 'N/A'}</p>
-                <p className="text-sm text-blue-600">Time Taken</p>
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-[#E2E8F0]">
+                <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-2xl font-bold text-[#0F172A]">{timeTaken ? formatTime(timeTaken) : 'N/A'}</p>
+                <p className="text-sm text-slate-600">Time Spent</p>
               </div>
             </div>
           </CardContent>
@@ -327,10 +332,10 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
 
         {/* Security Summary */}
         {securityLogs.length > 0 && (
-          <Alert variant="destructive" className="mb-8">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <p className="font-medium">Security Violations: {securityLogs.length} incident{securityLogs.length !== 1 ? 's' : ''}</p>
+          <Alert className="mb-8 border-red-300 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" strokeWidth={1.5} />
+            <AlertDescription className="text-red-800 ml-2">
+              <p className="font-bold">⚠️ Security Violations Detected: {securityLogs.length}</p>
               <ul className="mt-2 text-sm space-y-1">
                 {securityLogs.slice(0, 5).map((log, i) => (
                   <li key={i}>
@@ -339,7 +344,7 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
                 ))}
               </ul>
               {session.status === 'flagged' && (
-                <p className="mt-2 text-sm font-medium">⚠️ This exam has been flagged for review due to multiple violations.</p>
+                <p className="mt-2 text-sm font-semibold">This assessment has been flagged for institutional review.</p>
               )}
             </AlertDescription>
           </Alert>
@@ -347,52 +352,52 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
 
         {/* Question Breakdown */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Question Breakdown</h2>
+          <h2 className="text-2xl font-bold text-[#0F172A]">Question Breakdown</h2>
           
           {results.map((result, index) => {
             const { question, studentAnswer, correctAnswer, isCorrect, pointsEarned, pointsPossible } = result
 
             return (
-              <Card key={question.id} className={`${
-                isCorrect ? 'border-green-300' : 
-                studentAnswer === null ? 'border-gray-300' :
-                'border-red-300'
-              } border-2`}>
+              <Card key={question.id} className={`border-2 shadow-sm ${
+                isCorrect ? 'border-[#10B981] bg-emerald-50' : 
+                studentAnswer === null ? 'border-slate-300 bg-slate-50' :
+                'border-red-300 bg-red-50'
+              }`}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <Badge variant={isCorrect ? 'default' : 'secondary'} className={
-                          isCorrect ? 'bg-green-500' : studentAnswer === null ? 'bg-gray-500' : 'bg-red-500'
-                        }>
-                          Question {index + 1}
-                        </Badge>
+                        <div className={`px-3 py-1 rounded font-bold text-white text-xs ${
+                          isCorrect ? 'bg-[#10B981]' : studentAnswer === null ? 'bg-slate-500' : 'bg-red-600'
+                        }`}>
+                          Q{index + 1}
+                        </div>
                         {isCorrect ? (
-                          <span className="flex items-center gap-1 text-green-600 font-medium">
-                            <CheckCircle2 className="h-5 w-5" />
+                          <span className="flex items-center gap-1 text-[#10B981] font-semibold">
+                            <CheckCircle2 className="h-5 w-5" strokeWidth={1.5} />
                             Correct
                           </span>
                         ) : studentAnswer === null ? (
-                          <span className="flex items-center gap-1 text-gray-600 font-medium">
-                            <AlertTriangle className="h-5 w-5" />
+                          <span className="flex items-center gap-1 text-slate-600 font-semibold">
+                            <AlertTriangle className="h-5 w-5" strokeWidth={1.5} />
                             Not Answered
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-red-600 font-medium">
-                            <XCircle className="h-5 w-5" />
-                            Wrong
+                          <span className="flex items-center gap-1 text-red-600 font-semibold">
+                            <XCircle className="h-5 w-5" strokeWidth={1.5} />
+                            Incorrect
                           </span>
                         )}
                       </div>
-                      <CardTitle className="text-lg">{question.content}</CardTitle>
+                      <CardTitle className="text-lg text-[#0F172A]">{question.content}</CardTitle>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Points</p>
-                      <p className="text-xl font-bold">
-                        <span className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                      <p className="text-sm text-slate-600 font-medium">Points</p>
+                      <p className="text-2xl font-bold">
+                        <span className={isCorrect ? 'text-[#10B981]' : 'text-red-600'}>
                           {pointsEarned}
                         </span>
-                        <span className="text-gray-400"> / {pointsPossible}</span>
+                        <span className="text-slate-400 text-lg"> / {pointsPossible}</span>
                       </p>
                     </div>
                   </div>
@@ -408,22 +413,24 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
                           <div
                             key={option.id}
                             className={`p-3 rounded-lg border-2 ${
-                              isCorrectAnswer && isStudentAnswer ? 'bg-green-50 border-green-500' :
-                              isCorrectAnswer ? 'bg-green-50 border-green-400' :
-                              isStudentAnswer ? 'bg-red-50 border-red-500' :
-                              'border-gray-200'
+                              isCorrectAnswer && isStudentAnswer ? 'bg-emerald-100 border-[#10B981]' :
+                              isCorrectAnswer ? 'bg-emerald-50 border-[#10B981]' :
+                              isStudentAnswer ? 'bg-red-100 border-red-500' :
+                              'border-[#E2E8F0] bg-white'
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span>{option.content}</span>
+                              <span className="text-[#0F172A]">{option.content}</span>
                               <div className="flex items-center gap-2">
                                 {isStudentAnswer && (
-                                  <Badge variant={isCorrectAnswer ? 'default' : 'destructive'} className="text-xs">
+                                  <div className={`px-2 py-1 rounded text-xs font-semibold ${
+                                    isCorrectAnswer ? 'bg-[#10B981] text-white' : 'bg-red-600 text-white'
+                                  }`}>
                                     Your Answer
-                                  </Badge>
+                                  </div>
                                 )}
                                 {isCorrectAnswer && showCorrectAnswers && (
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                  <CheckCircle2 className="h-5 w-5 text-[#10B981]" strokeWidth={1.5} />
                                 )}
                               </div>
                             </div>
@@ -433,14 +440,14 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="bg-slate-50 p-4 rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-1">Your Answer:</p>
-                        <p className="text-sm">{studentAnswer || 'No answer provided'}</p>
+                      <div className="bg-white p-4 rounded-lg border border-[#E2E8F0]">
+                        <p className="text-sm font-semibold text-[#0F172A] mb-1">Your Response:</p>
+                        <p className="text-sm text-slate-700">{studentAnswer || '(No response provided)'}</p>
                       </div>
                       {showCorrectAnswers && correctAnswer && (
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                          <p className="text-sm text-blue-600 mb-1">Note:</p>
-                          <p className="text-sm">{correctAnswer}</p>
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <p className="text-sm font-semibold text-blue-900 mb-1">Note:</p>
+                          <p className="text-sm text-blue-800">{correctAnswer}</p>
                         </div>
                       )}
                     </div>
@@ -453,13 +460,19 @@ export default function ExamResultsPage({ params }: ResultsPageProps) {
 
         {/* Footer Actions */}
         <div className="mt-8 flex justify-center gap-4">
-          <Button onClick={handleDownloadPDF} className="gap-2">
-            <Download className="h-4 w-4" />
+          <Button 
+            onClick={handleDownloadPDF} 
+            className="bg-[#0F172A] hover:bg-[#1F2937] text-white gap-2"
+          >
+            <Download className="h-4 w-4" strokeWidth={1.5} />
             Download Results PDF
           </Button>
           <Link href="/">
-            <Button variant="outline" className="gap-2">
-              <Home className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              className="border-[#E2E8F0] text-[#0F172A] gap-2"
+            >
+              <Home className="h-4 w-4" strokeWidth={1.5} />
               Return Home
             </Button>
           </Link>
