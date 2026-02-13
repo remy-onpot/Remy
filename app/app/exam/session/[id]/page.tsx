@@ -114,7 +114,7 @@ export default function ExamSessionPage({ params }: ExamSessionPageProps) {
       // Calculate time remaining
       const settings = typedSession.quiz?.settings as QuizSettings | undefined
       const duration = settings?.duration ?? 60 // fallback to 60 minutes if settings missing
-      const startTime = new Date(sessionData.started_at).getTime()
+      const startTime = new Date(sessionData.started_at || Date.now()).getTime()
       const durationMs = duration * 60 * 1000
       const endTime = startTime + durationMs
       const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000))
