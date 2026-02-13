@@ -85,6 +85,11 @@ export interface Answer {
   question_id: string;
   selected_option_id?: string;
   text_response?: string;
+  ai_score?: number;
+  ai_feedback?: string;
+  lecturer_score?: number;
+  is_graded?: boolean;
+  
   question?: Question;
 }
 

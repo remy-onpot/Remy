@@ -16,18 +16,30 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
+          ai_feedback: string | null
+          ai_score: number | null
+          is_graded: boolean | null
+          lecturer_score: number | null
           question_id: string
           selected_option_id: string | null
           session_id: string
           text_response: string | null
         }
         Insert: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          is_graded?: boolean | null
+          lecturer_score?: number | null
           question_id: string
           selected_option_id?: string | null
           session_id: string
           text_response?: string | null
         }
         Update: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          is_graded?: boolean | null
+          lecturer_score?: number | null
           question_id?: string
           selected_option_id?: string | null
           session_id?: string
@@ -283,6 +295,59 @@ export type Database = {
           },
         ]
       }
+      saved_roster_students: {
+        Row: {
+          id: string
+          index_number: string
+          saved_roster_id: string | null
+          student_name: string
+        }
+        Insert: {
+          id?: string
+          index_number: string
+          saved_roster_id?: string | null
+          student_name: string
+        }
+        Update: {
+          id?: string
+          index_number?: string
+          saved_roster_id?: string | null
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_roster_students_saved_roster_id_fkey"
+            columns: ["saved_roster_id"]
+            isOneToOne: false
+            referencedRelation: "saved_rosters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_rosters: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          lecturer_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lecturer_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          lecturer_id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           duration_seconds: number | null
@@ -331,6 +396,60 @@ export type Database = {
             referencedColumns: ["session_id"]
           },
         ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          lecturer_id: string | null
+          reference: string
+          status: string | null
+          tier: string
+          tokens_granted: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          lecturer_id?: string | null
+          reference: string
+          status?: string | null
+          tier: string
+          tokens_granted: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          lecturer_id?: string | null
+          reference?: string
+          status?: string | null
+          tier?: string
+          tokens_granted?: number
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          advanced_tokens: number | null
+          basic_tokens: number | null
+          lecturer_id: string
+          power_tokens: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          advanced_tokens?: number | null
+          basic_tokens?: number | null
+          lecturer_id: string
+          power_tokens?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          advanced_tokens?: number | null
+          basic_tokens?: number | null
+          lecturer_id?: string
+          power_tokens?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

@@ -34,6 +34,8 @@ export default function ExamReviewPage({ params }: ReviewPageProps) {
   }, [])
 
   const loadReviewData = async () => {
+    if (!sessionId) return
+    
     try {
       // Fetch session
       const { data: sessionData, error: sessionError } = await supabaseClient
@@ -56,7 +58,7 @@ export default function ExamReviewPage({ params }: ReviewPageProps) {
       const { data: questionsData, error: questionsError } = await supabaseClient
         .from('questions')
         .select('*, options(*)')
-        .eq('quiz_id', sessionData.quiz_id)
+        .eq('quiz_id', sessionData.quiz_id!)
         .order('position')
 
       if (questionsError) throw questionsError

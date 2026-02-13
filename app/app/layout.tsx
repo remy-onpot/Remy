@@ -8,7 +8,7 @@ const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
 const instrumentSerif = Instrument_Serif({ weight: '400', subsets: ['latin'], variable: '--font-instrument' })
 
 export const metadata: Metadata = {
-  title: 'NimdeQuizzer — Secure Examination Platform',
+  title: 'NimdePulse — Secure Digital Examination Platform',
   description: 'A professional online examination platform with advanced anti-cheating features',
 }
 
